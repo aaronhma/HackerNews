@@ -12,41 +12,57 @@ struct SettingsView: View {
     @State private var suggestedForYou = true
     @State private var sharedWithYou = false
     
+    @State private var clearCache = false
+    
     var body: some View {
         NavigationStack {
             Form {
-                Section("Sync") {
+                Section("Cloud Sync") {
                     Toggle("Enable iCloud Sync", isOn: $iCloudSync)
                 }
                 
                 Section("Personalization") {
-                    Toggle("Suggested For You", isOn: $suggestedForYou)
+                    Toggle("Show Suggested Stories", isOn: $suggestedForYou)
                     Toggle("Shared with You", isOn: $sharedWithYou)
                     
                     NavigationLink {
                         HistoryView()
                     } label: {
-                        Text("History")
+                        Label("History", systemImage: "clock.arrow.circlepath")
                     }
                     
                     NavigationLink {} label: {
-                        Text("Saved Stories")
+                        Label("Saved Stories", systemImage: "bookmark")
                     }
                     
                     NavigationLink {} label: {
-                        Text("Liked Stories")
+                        Label("Liked Stories", systemImage: "hand.thumbsup")
                     }
                     
                     NavigationLink {} label: {
-                        Text("Disliked Stories")
+                        Label("Disliked Stories", systemImage: "hand.thumbsdown")
                     }
                     
                     NavigationLink {} label: {
-                        Text("Blocked Topics")
+                        Label("Blocked Topics", systemImage: "minus.circle")
                     }
                     
                     NavigationLink {} label: {
-                        Text("Blocked Users")
+                        Label("Blocked Users", systemImage: "hand.raised")
+                    }
+                }
+                
+                Section("Data Usage") {
+                    Button(role: .destructive) {
+                        clearCache = true
+                    } label: {
+                        Label("Clear Cache", systemImage: "trash")
+                            .foregroundStyle(.red)
+                    }
+                    .confirmationDialog("All downloaded stories will be removed on the next app launch.", isPresented: $clearCache, titleVisibility: .visible) {
+                        Button("Clear Cache", role: .destructive) {
+                            URLCache.shared.removeAllCachedResponses()
+                        }
                     }
                 }
                 

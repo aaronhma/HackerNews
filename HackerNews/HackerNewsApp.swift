@@ -14,6 +14,9 @@ struct HackerNewsApp: App {
         WindowGroup {
             ContentView()
                 .modelContainer(for: StoryStorage.self)
+                .onAppear {
+                    URLCache.shared.removeAllCachedResponses()
+                }
         }
     }
 }

@@ -15,7 +15,7 @@ struct ContentView: View {
                     Label("Hacker News", systemImage: "newspaper")
                 }
             
-            Text("Search for a user...")
+            UserView(id: "jl")
                 .tabItem {
                     Label("User Search", systemImage: "person")
                 }

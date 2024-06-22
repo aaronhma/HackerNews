@@ -12,15 +12,26 @@ struct StoryListView: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            HStack {
-                Text(story.by)
-                    .foregroundStyle(.secondary)
-            }
+            Text(URL(string: story.url)!.hostURL())
+                .lineLimit(1)
             
             Text(story.title)
+                .lineLimit(3)
+                .bold()
+            
+            HStack {
+                Text(story.by)
+                    .lineLimit(1)
+                    .foregroundStyle(.secondary)
+                
+                Label(story.time.timeIntervalToString(), systemImage: "clock")
+            }
             
             HStack {
                 Label("\(story.score)", systemImage: "arrowshape.up")
+                Spacer()
+                Label("\(story.descendants) comments", systemImage: "bubble")
+                Spacer()
             }
         }
     }

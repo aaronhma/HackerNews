@@ -7,21 +7,37 @@
 
 import SwiftUI
 
+func showShareSheet(url: URL) {
+    let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    UIApplication.shared.currentUIWindow()?.rootViewController?.present(activityVC, animated: true, completion: nil)
+}
+
 struct TopStoriesView: View {
+    private let monitor = NetworkMonitor()
+    
     @State private var navigationPath = NavigationPath()
     
     @State private var isError = false
     @State private var isLoaded = false
+    @State private var topStories: [Int] = []
     @State private var stories: [Story] = []
     
+    @State private var selectedTab = "Top Stories"
+    
+    @State private var currentLoadedStories = 0
     @State private var numberOfStories = 10
+    @State private var showDebugOptions = false
+    @State private var showOfflineMessage = true
+    
+    private var tagName = ["Top Stories", "New", "Past", "Comments", "Ask", "Show", "Jobs"]
+    private var tagIcon = ["arrowshape.up", "newspaper", "backward", "bubble", "questionmark.app", "eye", "briefcase"]
     
     func refreshData() async {
+        topStories = []
         stories = []
+        currentLoadedStories = 0
         isError = false
         isLoaded = false
-        
-        var topStories: [Int] = []
         
         do {
             let topStoriesURL = URL(string: "https://hacker-news.firebaseio.com/v0/topstories.json")!
@@ -33,25 +49,57 @@ struct TopStoriesView: View {
         
         isLoaded = true
         
-        for i in topStories {
-            if stories.count == numberOfStories { break }
-            
+        await downloadNextFewStories()
+    }
+    
+    func downloadNextFewStories() async {
+        guard !topStories.isEmpty else { return }
+        guard currentLoadedStories < topStories.count else { return }
+        
+        isLoaded = false
+        
+        for i in currentLoadedStories..<min(currentLoadedStories + 10, topStories.count) {
             do {
-                let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(i).json")!
-                print(storyURL.absoluteString)
+                let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(topStories[i]).json")!
+//                print(storyURL.absoluteString)
                 let story = try await URLSession.shared.decode(Story.self, from: storyURL)
                 
                 stories.append(story)
             } catch {
                 isError = true
-                print(error.localizedDescription)
+//                print(error.localizedDescription)
             }
         }
+        
+        
+        currentLoadedStories += min(currentLoadedStories + 10, topStories.count)
+        
+        isLoaded = true
     }
     
     var body: some View {
         NavigationStack(path: $navigationPath) {
             VStack {
+                if showDebugOptions {
+                    ScrollView(.horizontal) {
+                        HStack {
+                            ForEach(Array(zip(tagName.indices, tagName)), id: \.0) { i, name in
+                                Button {
+                                    withAnimation {
+                                        selectedTab = name
+                                    }
+                                } label: {
+                                    Label(name, systemImage: selectedTab == name ? "\(tagIcon[i]).fill" : tagIcon[i])
+                                        .padding()
+                                        .background(selectedTab == name ? .blue : .secondary)
+                                        .foregroundStyle(.white)
+                                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 List {
                     Section {} footer: {
                         Text(Date.now, format: .dateTime.month().day())
@@ -62,7 +110,29 @@ struct TopStoriesView: View {
                     .listRowSpacing(0)
                     .listRowSeparator(.hidden)
                     
-                    if isError {
+                    if !monitor.isActive && showOfflineMessage {
+                        Section {
+                            Button {
+                                showOfflineMessage = false
+                            } label: {
+                                HStack {
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .foregroundStyle(.red)
+                                        .bold()
+                                    
+                                    Text("You're offline.")
+                                        .bold()
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                    
+                    if showDebugOptions && isError {
                         Section {
                             Button {
                                 Task {
@@ -76,7 +146,7 @@ struct TopStoriesView: View {
                                         .foregroundStyle(.red)
                                         .bold()
                                     
-                                    Text("DEBUG: Job postings & polls hidden.")
+                                    Text("Unexpected error when loading stories.")
                                         .bold()
                                 }
                             }
@@ -90,8 +160,68 @@ struct TopStoriesView: View {
                             } label: {
                                 StoryListView(story: story)
                             }
+                            .disabled(!monitor.isActive)
+                            .onAppear {
+                                if (currentLoadedStories % numberOfStories == 0) || (currentLoadedStories + numberOfStories) >= topStories.count {
+                                    Task {
+                                        await downloadNextFewStories()
+                                    }
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {} label: {
+                                    Label("Save", systemImage: "bookmark")
+                                }
+                                .tint(.indigo)
+                            }
+                            .swipeActions(edge: .trailing) {
+                                Button {
+                                    showShareSheet(url: URL(string: story.url)!)
+                                } label: {
+                                    Label("Share", systemImage: "square.and.arrow.up")
+                                }
+                                .tint(Color.blue)
+                            }
+                            .contextMenu {
+                                Section {
+                                    Button {} label: {
+                                        Label("Like", systemImage: "hand.thumbsup")
+                                    }
+                                    
+                                    Button {} label: {
+                                        Label("Dislike", systemImage: "hand.thumbsdown")
+                                    }
+                                }
+                                
+                                Section {
+                                    Button {} label: {
+                                        Label("Save Story", systemImage: "bookmark")
+                                    }
+                                    
+                                    Button {
+                                        UIPasteboard.general.string = story.url
+                                    } label: {
+                                        Label("Copy Link", systemImage: "link")
+                                    }
+                                }
+                                
+                                Section {
+                                    Button(role: .destructive) {} label: {
+                                        Label("Block Topic", systemImage: "minus.circle")
+                                    }
+                                    
+                                    Button(role: .destructive) {} label: {
+                                        Label("Block Poster", systemImage: "hand.raised")
+                                    }
+                                }
+                            }
                         }
                         .listRowSeparator(.hidden)
+                    }
+                    
+                    if !isLoaded {
+                        ProgressView()
+                            .controlSize(.extraLarge)
                     }
                 }
                 .listStyle(.plain)
@@ -99,42 +229,25 @@ struct TopStoriesView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Section("# Of Stories") {
+                        Section("Developer") {
                             Button {
                                 Task {
-                                    numberOfStories = 50
+                                    isLoaded = false
+                                    isError = false
                                     await refreshData()
                                 }
                             } label: {
-                                Text("50 Stories")
+                                Label("Force Refresh", systemImage: "arrow.circlepath")
                             }
                             
                             Button {
-                                Task {
-                                    numberOfStories = 100
-                                    await refreshData()
-                                }
+                                showDebugOptions.toggle()
                             } label: {
-                                Text("100 items")
-                            }
-                            
-                            Button {
-                                Task {
-                                    numberOfStories = 12000
-                                    await refreshData()
-                                }
-                            } label: {
-                                Text("Everything")
-                            }
-                        }
-                        
-                        Section("Sort By") {
-                            Button {} label: {
-                                Text("Y Combinator Proprietary Formula")
+                                Label(showDebugOptions ? "Beta Enabled" : "Use Beta", systemImage: showDebugOptions ? "checkmark" : "testtube.2")
                             }
                         }
                     } label: {
-                        Label("View Options", systemImage: "line.3.horizontal.circle")
+                        Label("Developer Options", systemImage: "hammer")
                     }
                 }
             }
@@ -143,7 +256,7 @@ struct TopStoriesView: View {
                     await refreshData()
                 }
             }
-            .navigationTitle("Top Stories")
+            .navigationTitle(monitor.isActive ? "Top Stories" : "Offline")
             .navigationDestination(for: Story.self) { story in
                 StoryDetailView(story: story)
             }

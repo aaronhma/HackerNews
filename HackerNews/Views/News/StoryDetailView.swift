@@ -28,6 +28,7 @@ struct StoryDetailView: View {
     
     @State private var isError = false
     @State private var isLoaded = false
+    @State private var showOPExplainerAlert = false
     @State private var comments: [Comment] = []
     
     func refreshData() async {
@@ -74,9 +75,10 @@ struct StoryDetailView: View {
                                     .clipShape(Capsule())
                                     .bold()
                                 
-                                Text(URL(string: story.url)!.prettify().absoluteString)
+                                Text(URL(string: story.url)!.hostURL())
                                     .foregroundStyle(.secondary)
-                                    .lineLimit(1)
+                                    .lineLimit(2)
+                                    .padding(.horizontal)
                             }
                         }
                 }
@@ -86,13 +88,15 @@ struct StoryDetailView: View {
                         .bold()
                         .font(.title)
                     
-                    Label(story.by, systemImage: "person")
-                    
                     Label(story.type.uppercased(), systemImage: "text.document")
                     
-                    Label("\(story.score)", systemImage: "arrowshape.up")
-                    
-                    Label(story.time.convertToDateComponents().description, systemImage: "clock")
+                    HStack {
+                        Label(story.by, systemImage: "person")
+                        
+                        Label("\(story.score)", systemImage: "arrowshape.up")
+                        
+                        Label(story.time.timeIntervalToString(), systemImage: "clock")
+                    }
                 }
                 .padding(.horizontal)
                 
@@ -103,9 +107,22 @@ struct StoryDetailView: View {
                     .padding(.horizontal)
                 
                 ForEach(comments, id: \.id) { comment in
-                    Label(comment.by, systemImage: "person")
-                        .bold()
-                        .padding(.top, 5)
+                    HStack {
+                        Label(comment.by, systemImage: "person")
+                            .bold()
+                            .padding(.top, 5)
+                        
+                        if comment.by == story.by {
+                            Label("OP", systemImage: "circle.fill")
+                                .font(.subheadline)
+                                .foregroundStyle(.blue)
+                                .bold()
+                                .onTapGesture {
+                                    showOPExplainerAlert = true
+                                }
+                                .alert("The OP (original poster) is \(story.by).", isPresented: $showOPExplainerAlert) {}
+                        }
+                    }
                     
                     Text(comment.text)
                 }
@@ -153,6 +170,12 @@ struct StoryDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                ShareLink(item: URL(string: story.url)!) {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+            }
+            
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Section {
                         Button {} label: {
@@ -169,7 +192,9 @@ struct StoryDetailView: View {
                             Label("Save Story", systemImage: "bookmark")
                         }
                         
-                        Button {} label: {
+                        Button {
+                            UIPasteboard.general.string = story.url
+                        } label: {
                             Label("Copy Link", systemImage: "link")
                         }
                     }

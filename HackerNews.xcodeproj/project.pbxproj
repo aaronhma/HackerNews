@@ -36,8 +36,9 @@
 		8B0B7E482C1E24CC004527D5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"TimeInterval+convertToDateComponents.swift",
-				"URL+prettify.swift",
+				TimeInterval.swift,
+				"UIApplication+currentUIWindow.swift",
+				URL.swift,
 				"URLSession+decode.swift",
 			);
 			target = 8B0B7E252C1E1DA1004527D5 /* HackerNews */;
@@ -50,6 +51,7 @@
 				News/TopStoriesView.swift,
 				Settings/HistoryView.swift,
 				Settings/SettingsView.swift,
+				UserView.swift,
 			);
 			target = 8B0B7E252C1E1DA1004527D5 /* HackerNews */;
 		};

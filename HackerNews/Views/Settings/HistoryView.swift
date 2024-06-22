@@ -21,26 +21,55 @@ struct HistoryView: View {
     }
     
     var body: some View {
-        List {
-            ForEach(stories) { story in
-                Text("story id #: \(story.id)")
-                    .swipeActions(edge: .leading) {
-                        Button("Save", systemImage: story.saved ? "bookmark.slash" : "bookmark") {
-                            story.saved.toggle()
-                        }
-                    }
-                    .swipeActions(edge: .trailing) {
-                        Button("Delete", systemImage: "trash", role: .destructive) {
-                            modelContext.delete(story)
-                        }
-                    }
+        VStack {
+            if stories.isEmpty {
+                VStack {
+                    Spacer()
+                    
+                    Image(systemName: "clock.arrow.circlepath")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 80)
+                        .padding(.bottom, 10)
+                    
+                    Text("No History Yet")
+                        .font(.title)
+                        .bold()
+                        .padding(.bottom, 10)
+                    
+                    Text("It's always a great day to learn! :)")
+                        .font(.subheadline)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 50)
+                        .padding(.bottom, 30)
+                    
+                    Spacer()
+                }
             }
-            .onDelete(perform: delete)
+            
+            List {
+                ForEach(stories) { story in
+                    Text("story id #: \(story.id)")
+                        .swipeActions(edge: .leading) {
+                            Button("Save", systemImage: story.saved ? "bookmark.slash" : "bookmark") {
+                                story.saved.toggle()
+                            }
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                modelContext.delete(story)
+                            }
+                        }
+                }
+                .onDelete(perform: delete)
+            }
         }
         .navigationTitle("History")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            EditButton()
+            if !stories.isEmpty {
+                EditButton()
+            }
         }
     }
 }

@@ -18,7 +18,7 @@ extension URLSession {
         
         let decoded = try decoder.decode(T.self, from: data)
         
-        print(decoded)
+//        print(decoded)
         
         return decoded
     }
