@@ -27,7 +27,9 @@
 		8B0B7E3C2C1E1F78004527D5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Ask.swift,
 				Comment.swift,
+				Job.swift,
 				Story.swift,
 				User.swift,
 			);

@@ -10,7 +10,6 @@ import SwiftData
 
 enum UserOpinion: Codable {
     case liked
-    case disliked
     case unknown
 }
 

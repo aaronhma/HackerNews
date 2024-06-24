@@ -13,9 +13,11 @@ struct StoryListView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(URL(string: story.url)!.hostURL())
+                .foregroundStyle(Color.accentColor)
                 .lineLimit(1)
             
             Text(story.title)
+                .font(.title3)
                 .lineLimit(3)
                 .bold()
             
@@ -24,13 +26,31 @@ struct StoryListView: View {
                     .lineLimit(1)
                     .foregroundStyle(.secondary)
                 
-                Label(story.time.timeIntervalToString(), systemImage: "clock")
+                Image(systemName: "circle.fill")
+                    .resizable()
+                    .frame(width: 5, height: 5)
+                    .foregroundStyle(.secondary)
+                
+                Text(story.time.timeIntervalToString())
+                    .foregroundStyle(.secondary)
+                
+                Spacer()
             }
             
             HStack {
-                Label("\(story.score)", systemImage: "arrowshape.up")
-                Spacer()
-                Label("\(story.descendants) comments", systemImage: "bubble")
+                Image(systemName: "arrowshape.up.fill")
+                    .foregroundStyle(.secondary)
+                
+                Text("\(story.score)")
+                    .foregroundStyle(.secondary)
+                
+                Image(systemName: "circle.fill")
+                    .resizable()
+                    .frame(width: 5, height: 5)
+                    .foregroundStyle(.secondary)
+                
+                Text("\(story.descendants) comments")
+                    .foregroundStyle(.secondary)
                 Spacer()
             }
         }

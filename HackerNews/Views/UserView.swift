@@ -100,8 +100,10 @@ struct UserView: View {
                     Label("joined \(user.created.timeIntervalToString())", systemImage: "clock")
                     
                     VStack(alignment: .leading) {
-                        Text("Submissions: \(user.submitted)")
-                            .font(.subheadline)
+                        if let submitted = user.submitted {
+                            Text("Submissions: \(submitted)")
+                                .font(.subheadline)
+                        }
                     }
                 }
                 .navigationTitle(id)

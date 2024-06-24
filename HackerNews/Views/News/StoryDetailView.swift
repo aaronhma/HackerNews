@@ -22,6 +22,8 @@ struct WebView: UIViewRepresentable {
 }
 
 struct StoryDetailView: View {
+    private let monitor = NetworkMonitor()
+    
     @Environment(\.modelContext) private var modelContext
     
     var story: Story
@@ -29,6 +31,7 @@ struct StoryDetailView: View {
     @State private var isError = false
     @State private var isLoaded = false
     @State private var showOPExplainerAlert = false
+    
     @State private var comments: [Comment] = []
     
     func refreshData() async {
@@ -61,26 +64,49 @@ struct StoryDetailView: View {
                         UIApplication.shared.open(url)
                     }
                 } label: {
-                    WebView(url: URL(string: story.url)!)
-                        .frame(width: .infinity, height: 150)
-                        .opacity(0.4)
-                        .blur(radius: 5)
-                        .disabled(true)
-                        .overlay {
-                            VStack {
-                                Label("Open", systemImage: "safari")
-                                    .padding(8)
-                                    .foregroundStyle(.white)
-                                    .background(Color.accentColor)
-                                    .clipShape(Capsule())
-                                    .bold()
-                                
-                                Text(URL(string: story.url)!.hostURL())
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(2)
-                                    .padding(.horizontal)
+                    if !monitor.isActive {
+                        Rectangle()
+                            .frame(width: .infinity, height: 150)
+                            .opacity(0.4)
+                            .blur(radius: 5)
+                            .disabled(true)
+                            .overlay {
+                                VStack {
+                                    Label("Open", systemImage: "safari")
+                                        .padding(8)
+                                        .foregroundStyle(.white)
+                                        .background(Color.accentColor)
+                                        .clipShape(Capsule())
+                                        .bold()
+                                    
+                                    Text(URL(string: story.url)!.hostURL())
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(2)
+                                        .padding(.horizontal)
+                                }
                             }
-                        }
+                    } else {
+                        WebView(url: URL(string: story.url)!)
+                            .frame(width: .infinity, height: 150)
+                            .opacity(0.4)
+                            .blur(radius: 5)
+                            .disabled(true)
+                            .overlay {
+                                VStack {
+                                    Label("Open", systemImage: "safari")
+                                        .padding(8)
+                                        .foregroundStyle(.white)
+                                        .background(Color.accentColor)
+                                        .clipShape(Capsule())
+                                        .bold()
+                                    
+                                    Text(URL(string: story.url)!.hostURL())
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(2)
+                                        .padding(.horizontal)
+                                }
+                            }
+                    }
                 }
                 
                 Group {
@@ -107,51 +133,115 @@ struct StoryDetailView: View {
                     .padding(.horizontal)
                 
                 ForEach(comments, id: \.id) { comment in
-                    HStack {
-                        Label(comment.by, systemImage: "person")
-                            .bold()
-                            .padding(.top, 5)
-                        
-                        if comment.by == story.by {
-                            Label("OP", systemImage: "circle.fill")
-                                .font(.subheadline)
-                                .foregroundStyle(.blue)
+                    VStack {
+                        HStack {
+                            Label(comment.by, systemImage: "person")
+                                .foregroundStyle(Color.accentColor)
                                 .bold()
-                                .onTapGesture {
-                                    showOPExplainerAlert = true
-                                }
-                                .alert("The OP (original poster) is \(story.by).", isPresented: $showOPExplainerAlert) {}
+                                .padding(.top, 5)
+                            
+                            if comment.by == story.by {
+                                Label("OP", systemImage: "circle.fill")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.blue)
+                                    .bold()
+                                    .onTapGesture {
+                                        showOPExplainerAlert = true
+                                    }
+                                    .alert("The OP (original poster) is \(story.by).", isPresented: $showOPExplainerAlert) {}
+                            }
+                            
+                            Spacer()
+                            
+                            Text(comment.time.timeIntervalToString())
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        Text(comment.text)
+                            .padding(.vertical, 2)
+                        
+                        HStack {
+                            Button {} label: {
+                                Label("Upvote", systemImage: "arrowshape.up")
+                            }
+                            
+                            Spacer()
                         }
                     }
                     
-                    Text(comment.text)
+                    Divider()
                 }
                 .padding(.horizontal)
+                //                }
                 
                 Divider()
                 
-                if isError {
-                    Image(systemName: "exclamationmark.triangle")
-                        .foregroundStyle(.red)
-                        .bold()
-                        .font(.largeTitle)
-                    
-                    Text("An error occurred.")
-                        .font(.headline)
-                        .bold()
-                    
-                    Button {
-                        Task {
-                            isLoaded = false
-                            isError = false
-                            await refreshData()
+                if !monitor.isActive {
+                    HStack {
+                        Spacer()
+                        
+                        VStack {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundStyle(.red)
+                                .bold()
+                                .font(.largeTitle)
+                            
+                            Text("You're offline.")
+                                .font(.headline)
+                                .bold()
+                            
+                            Button {
+                                Task {
+                                    isLoaded = false
+                                    isError = false
+                                    await refreshData()
+                                }
+                            } label: {
+                                Label("Try again", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
+                            }
                         }
-                    } label: {
-                        Label("Try again", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
+                        
+                        Spacer()
                     }
-                }  else if !isLoaded {
-                    ProgressView()
-                        .controlSize(.extraLarge)
+                    .padding(.top)
+                } else if isError {
+                    HStack {
+                        Spacer()
+                        
+                        VStack {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundStyle(.red)
+                                .bold()
+                                .font(.largeTitle)
+                            
+                            Text("An error occurred.")
+                                .font(.headline)
+                                .bold()
+                            
+                            Button {
+                                Task {
+                                    isLoaded = false
+                                    isError = false
+                                    await refreshData()
+                                }
+                            } label: {
+                                Label("Try again", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
+                            }
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.top)
+                } else if !isLoaded {
+                    HStack {
+                        Spacer()
+                        
+                        ProgressView()
+                            .controlSize(.extraLarge)
+                        
+                        Spacer()
+                    }
+                    .padding(.top)
                 }
             }
         }
@@ -169,6 +259,12 @@ struct StoryDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {} label: {
+                    Label("Save Story", systemImage: "bookmark")
+                }
+            }
+            
             ToolbarItem(placement: .topBarTrailing) {
                 ShareLink(item: URL(string: story.url)!) {
                     Label("Share", systemImage: "square.and.arrow.up")
@@ -178,20 +274,6 @@ struct StoryDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Section {
-                        Button {} label: {
-                            Label("Like", systemImage: "hand.thumbsup")
-                        }
-                        
-                        Button {} label: {
-                            Label("Dislike", systemImage: "hand.thumbsdown")
-                        }
-                    }
-                    
-                    Section {
-                        Button {} label: {
-                            Label("Save Story", systemImage: "bookmark")
-                        }
-                        
                         Button {
                             UIPasteboard.general.string = story.url
                         } label: {
@@ -201,11 +283,19 @@ struct StoryDetailView: View {
                     
                     Section {
                         Button(role: .destructive) {} label: {
+                            Label("Block Website", systemImage: "minus.circle")
+                        }
+                        
+                        Button(role: .destructive) {} label: {
                             Label("Block Topic", systemImage: "minus.circle")
                         }
                         
                         Button(role: .destructive) {} label: {
                             Label("Block Poster", systemImage: "hand.raised")
+                        }
+                        
+                        Button(role: .destructive) {} label: {
+                            Label("Report Content", systemImage: "minus.circle")
                         }
                     }
                 } label: {
@@ -213,7 +303,7 @@ struct StoryDetailView: View {
                 }
             }
         }
-        .navigationTitle(story.title)
+        .navigationTitle(URL(string: story.url)!.hostURL())
         .navigationBarTitleDisplayMode(.inline)
     }
 }

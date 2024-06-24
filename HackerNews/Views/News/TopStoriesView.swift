@@ -24,7 +24,8 @@ struct TopStoriesView: View {
     
     @State private var selectedTab = "Top Stories"
     
-    @State private var currentLoadedStories = 0
+    @State private var currentStoriesIndex = 0
+    @State private var currentBatchLoadedStories = 0
     @State private var numberOfStories = 10
     @State private var showDebugOptions = false
     @State private var showOfflineMessage = true
@@ -35,44 +36,46 @@ struct TopStoriesView: View {
     func refreshData() async {
         topStories = []
         stories = []
-        currentLoadedStories = 0
+        currentStoriesIndex = 0
+        currentBatchLoadedStories = 0
         isError = false
         isLoaded = false
         
         do {
             let topStoriesURL = URL(string: "https://hacker-news.firebaseio.com/v0/topstories.json")!
             topStories = try await URLSession.shared.decode(from: topStoriesURL)
+            print(topStories.count)
         } catch {
             isError = true
             print(error.localizedDescription)
         }
-        
-        isLoaded = true
         
         await downloadNextFewStories()
     }
     
     func downloadNextFewStories() async {
         guard !topStories.isEmpty else { return }
-        guard currentLoadedStories < topStories.count else { return }
+        guard currentStoriesIndex < topStories.count else { return }
         
         isLoaded = false
+        currentBatchLoadedStories = 0
         
-        for i in currentLoadedStories..<min(currentLoadedStories + 10, topStories.count) {
+        for _ in 0..<numberOfStories {
+//            guard currentStoriesIndex < topStories.count else { return }
+            
             do {
-                let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(topStories[i]).json")!
-//                print(storyURL.absoluteString)
+                let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(topStories[currentStoriesIndex]).json")!
+                print(storyURL.absoluteString, currentStoriesIndex, currentBatchLoadedStories)
+                currentStoriesIndex += 1
+                currentBatchLoadedStories += 1
                 let story = try await URLSession.shared.decode(Story.self, from: storyURL)
                 
                 stories.append(story)
             } catch {
                 isError = true
-//                print(error.localizedDescription)
+                //                print(error.localizedDescription)
             }
         }
-        
-        
-        currentLoadedStories += min(currentLoadedStories + 10, topStories.count)
         
         isLoaded = true
     }
@@ -90,10 +93,11 @@ struct TopStoriesView: View {
                                     }
                                 } label: {
                                     Label(name, systemImage: selectedTab == name ? "\(tagIcon[i]).fill" : tagIcon[i])
-                                        .padding()
+                                        .padding(.vertical, 5)
+                                        .padding(.horizontal, 8)
                                         .background(selectedTab == name ? .blue : .secondary)
                                         .foregroundStyle(.white)
-                                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                                        .clipShape(RoundedRectangle(cornerRadius: 55))
                                 }
                             }
                         }
@@ -162,7 +166,7 @@ struct TopStoriesView: View {
                             }
                             .disabled(!monitor.isActive)
                             .onAppear {
-                                if (currentLoadedStories % numberOfStories == 0) || (currentLoadedStories + numberOfStories) >= topStories.count {
+                                if currentBatchLoadedStories + 1 == numberOfStories {
                                     Task {
                                         await downloadNextFewStories()
                                     }
@@ -184,12 +188,16 @@ struct TopStoriesView: View {
                             }
                             .contextMenu {
                                 Section {
+                                    Button {
+                                        navigationPath.append(story)
+                                    } label: {
+                                        Label("Read Story", systemImage: "newspaper")
+                                    }
+                                }
+                                
+                                Section {
                                     Button {} label: {
                                         Label("Like", systemImage: "hand.thumbsup")
-                                    }
-                                    
-                                    Button {} label: {
-                                        Label("Dislike", systemImage: "hand.thumbsdown")
                                     }
                                 }
                                 
@@ -220,8 +228,14 @@ struct TopStoriesView: View {
                     }
                     
                     if !isLoaded {
-                        ProgressView()
-                            .controlSize(.extraLarge)
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                                .controlSize(.extraLarge)
+                            Spacer()
+                        }
+                        .padding(.vertical)
+                        .listRowSeparator(.hidden)
                     }
                 }
                 .listStyle(.plain)

@@ -21,6 +21,28 @@ struct SettingsView: View {
                     Toggle("Enable iCloud Sync", isOn: $iCloudSync)
                 }
                 
+                Section("Display & Appearance") {
+                    NavigationLink {
+                        List {
+                            Section("Left to Right") {
+                                Label("Save Story", systemImage: "bookmark")
+                                Label("Upvote Story", systemImage: "arrowshape.up")
+                                Label("Share Story", systemImage: "square.and.arrow.up")
+                            }
+                            
+                            Section("Right to Left") {
+                                Label("Save Story", systemImage: "bookmark")
+                                Label("Upvote Story", systemImage: "arrowshape.up")
+                                Label("Share Story", systemImage: "square.and.arrow.up")
+                            }
+                        }
+                        .navigationTitle("Swipe Actions")
+                        .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        Label("Swipe Actions", systemImage: "hand.tap")
+                    }
+                }
+                
                 Section("Personalization") {
                     Toggle("Show Suggested Stories", isOn: $suggestedForYou)
                     Toggle("Shared with You", isOn: $sharedWithYou)
@@ -37,10 +59,6 @@ struct SettingsView: View {
                     
                     NavigationLink {} label: {
                         Label("Liked Stories", systemImage: "hand.thumbsup")
-                    }
-                    
-                    NavigationLink {} label: {
-                        Label("Disliked Stories", systemImage: "hand.thumbsdown")
                     }
                     
                     NavigationLink {} label: {

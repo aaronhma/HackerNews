@@ -12,5 +12,5 @@ struct User: Codable {
     var created: TimeInterval
     var id: String
     var karma: Int
-    var submitted: [Int]
+    var submitted: [Int]?
 }

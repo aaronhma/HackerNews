@@ -75,6 +75,8 @@ struct HistoryView: View {
 }
 
 #Preview {
-    HistoryView()
-        .modelContainer(for: StoryStorage.self, inMemory: true)
+    NavigationStack {
+        HistoryView()
+            .modelContainer(for: StoryStorage.self, inMemory: true)
+    }
 }
