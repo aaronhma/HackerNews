@@ -1,0 +1,10 @@
+//
+//  .swiftint.yml
+//  HackerNews
+//
+//  Created by Aaron Ma on 7/7/24.
+//
+opt_in_rules:
+    - indentation_width
+    - explicit_self
+    - operator_usage_whitespace

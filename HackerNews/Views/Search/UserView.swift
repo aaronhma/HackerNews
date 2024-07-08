@@ -17,10 +17,10 @@ struct UserView: View {
     @State private var isError = false
     @State private var isLoaded = false
     @State private var followingUser = false
-    @State private var user: User = User(about: "", created: 0, id: "", karma: 0, submitted: [])
+    @State private var user: User = User(created: 0, id: "", karma: 0, submitted: [])
     
     func refreshData() async {
-        user = User(about: "", created: 0, id: "", karma: 0, submitted: [])
+        user = User(created: 0, id: "", karma: 0, submitted: [])
         isError = false
         isLoaded = false
         
@@ -94,6 +94,11 @@ struct UserView: View {
                             .background(Color.accentColor)
                             .clipShape(Capsule())
                             .bold()
+                    }
+                    
+                    if let about = user.about {
+                        Text(about)
+                            .foregroundStyle(.secondary)
                     }
                     
                     Label("\(user.karma)", systemImage: "arrowshape.up")

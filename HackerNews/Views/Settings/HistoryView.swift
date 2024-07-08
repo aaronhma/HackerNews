@@ -11,6 +11,8 @@ import SwiftData
 struct HistoryView: View {
     @Environment(\.modelContext) private var modelContext
     
+    @State private var selectedTab = "All"
+    
     @Query(sort: \StoryStorage.id) var stories: [StoryStorage]
     
     func delete(_ indexSet: IndexSet) {
@@ -48,20 +50,35 @@ struct HistoryView: View {
             }
             
             List {
-                ForEach(stories) { story in
-                    Text("story id #: \(story.id)")
-                        .swipeActions(edge: .leading) {
-                            Button("Save", systemImage: story.saved ? "bookmark.slash" : "bookmark") {
-                                story.saved.toggle()
+                if !stories.isEmpty {
+                    Section {
+                        Button(role: .destructive) {
+                            do {
+                                try modelContext.delete(model: StoryStorage.self)
+                            } catch {
+                                print(error.localizedDescription)
                             }
+                        } label: {
+                            Label("Clear History", systemImage: "trash")
+                                .foregroundStyle(.red)
                         }
-                        .swipeActions(edge: .trailing) {
-                            Button("Delete", systemImage: "trash", role: .destructive) {
-                                modelContext.delete(story)
+                    }
+                    
+                    ForEach(stories) { story in
+                        Text("story id #: \(story.id)")
+                            .swipeActions(edge: .leading) {
+                                Button("Save", systemImage: story.saved ? "bookmark.slash" : "bookmark") {
+                                    story.saved.toggle()
+                                }
                             }
-                        }
+                            .swipeActions(edge: .trailing) {
+                                Button("Delete", systemImage: "trash", role: .destructive) {
+                                    modelContext.delete(story)
+                                }
+                            }
+                    }
+                    .onDelete(perform: delete)
                 }
-                .onDelete(perform: delete)
             }
         }
         .navigationTitle("History")

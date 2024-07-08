@@ -8,7 +8,7 @@
 import Foundation
 
 struct User: Codable {
-    var about: String
+    var about: String?
     var created: TimeInterval
     var id: String
     var karma: Int

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Story: Codable, Hashable {
+struct Story: Codable, Hashable, Identifiable {
     var by: String
     var descendants: Int
     var id: Int
@@ -15,6 +15,7 @@ struct Story: Codable, Hashable {
     var score: Int
     var time: TimeInterval
     var title: String
+//    var text: String?
     var type: String
     var url: String
 }

@@ -22,19 +22,19 @@ extension TimeInterval {
         let components = calendar.dateComponents(unitFlags, from: Date(timeIntervalSince1970: self), to: Date())
 
         if let years = components.year, years > 0 {
-            return years == 1 ? "1 year ago" : "\(years) years ago"
+            return years == 1 ? "1y ago" : "\(years)yr. ago"
         } else if let months = components.month, months > 0 {
-            return months == 1 ? "1 month ago" : "\(months) months ago"
+            return months == 1 ? "1m ago" : "\(months)m ago"
         } else if let weeks = components.weekOfYear, weeks > 0 {
-            return weeks == 1 ? "1 week ago" : "\(weeks) weeks ago"
+            return weeks == 1 ? "1w ago" : "\(weeks)w ago"
         } else if let days = components.day, days > 0 {
-            return days == 1 ? "1 day ago" : "\(days) days ago"
+            return days == 1 ? "1d ago" : "\(days)d ago"
         } else if let hours = components.hour, hours > 0 {
-            return hours == 1 ? "1 hour ago" : "\(hours) hours ago"
+            return hours == 1 ? "1h ago" : "\(hours)h ago"
         } else if let minutes = components.minute, minutes > 0 {
-            return minutes == 1 ? "1 minute ago" : "\(minutes) minutes ago"
+            return minutes == 1 ? "1m ago" : "\(minutes)min ago"
         } else {
-            return components.second == 1 ? "1 second ago" : "\(components.second ?? 0) seconds ago"
+            return components.second == 1 ? "1s ago" : "\(components.second ?? 0)s ago"
         }
     }
 }

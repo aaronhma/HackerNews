@@ -5,21 +5,50 @@
 //  Created by Aaron Ma on 6/15/24.
 //
 
+import Foundation
 import SwiftUI
 import WebKit
 
 struct WebView: UIViewRepresentable {
     let url: URL
+    @Binding var storyLoading: Bool
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
     
     func makeUIView(context: Context) -> WKWebView {
-        return WKWebView()
+        let webView = WKWebView()
+        webView.navigationDelegate = context.coordinator
+        return webView
     }
     
-    func updateUIView(_ uiView: WKWebView, context: Context) {
-        let request = URLRequest(url: url)
-        uiView.load(request)
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        if storyLoading {
+            webView.load(URLRequest(url: url))
+            webView.evaluateJavaScript("document.documentElement.scrollHeight") { (result, error) in
+                context.coordinator.parent.storyLoading = false
+            }
+        }
+    }
+    
+    class Coordinator: NSObject, WKNavigationDelegate {
+        var parent: WebView
+        
+        init(_ parent: WebView) {
+            self.parent = parent
+        }
+        
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            webView.evaluateJavaScript("document.readyState") { (result, error) in
+                if let readyState = result as? String, readyState == "complete" {
+                    self.parent.storyLoading = false
+                }
+            }
+        }
     }
 }
+
 
 struct StoryDetailView: View {
     private let monitor = NetworkMonitor()
@@ -28,234 +57,257 @@ struct StoryDetailView: View {
     
     var story: Story
     
-    @State private var isError = false
-    @State private var isLoaded = false
-    @State private var showOPExplainerAlert = false
+    @State private var upvotedStory = false
+    @State private var storyLoading = true
+    @State private var openStory = false
+//    @State private var isError = false
+//    @State private var isLoaded = false
+//    @State private var showOPExplainerAlert = false
     
-    @State private var comments: [Comment] = []
+//    @State private var comments: [Comment] = []
     
-    func refreshData() async {
-        comments = []
-        isError = false
-        isLoaded = false
+//    func refreshData() async {
+//        comments = []
+//        isError = false
+//        isLoaded = false
+//        
+//        if let allComments = story.kids {
+//            for i in allComments {
+//                do {
+//                    let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(i).json")!
+//                    let comment = try await URLSession.shared.decode(Comment.self, from: storyURL)
+//                    
+//                    comments.append(comment)
+//                } catch {
+//                    print(error.localizedDescription)
+//                    isError = true
+//                }
+//            }
+//        }
+//        
+//        isLoaded = true
+//    }
+    
+    func getSocialMediaPreviewImage(for url: URL) -> String? {
+        let semaphore = DispatchSemaphore(value: 0)
+        var previewImageURLString: String?
         
-        if let allComments = story.kids {
-            for i in allComments {
-                do {
-                    let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(i).json")!
-                    let comment = try await URLSession.shared.decode(Comment.self, from: storyURL)
-                    
-                    comments.append(comment)
-                } catch {
-                    print(error.localizedDescription)
-                    isError = true
-                }
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                print("Error loading URL: \(error.localizedDescription)")
+                semaphore.signal()
+                return
             }
+            
+            guard let data = data, let html = String(data: data, encoding: .utf8) else {
+                semaphore.signal()
+                return
+            }
+            
+            let regex = try! NSRegularExpression(pattern: "<meta property=\"og:image\" content=\"([^\"]+)\"")
+            let matches = regex.matches(in: html, range: NSRange(location: 0, length: html.utf16.count))
+            if let match = matches.first {
+                let range = Range(match.range(at: 1), in: html)!
+                previewImageURLString = String(html[range])
+            } else {
+                // Fallback to favicon
+                previewImageURLString = "\(url.absoluteString)/favicon.ico"
+            }
+            semaphore.signal()
         }
+        task.resume()
         
-        isLoaded = true
+        _ = semaphore.wait(timeout: .distantFuture)
+        
+        return previewImageURLString
     }
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading) {
-                Button {
-                    if let url = URL(string: story.url) {
-                        UIApplication.shared.open(url)
-                    }
-                } label: {
-                    if !monitor.isActive {
-                        Rectangle()
-                            .frame(width: .infinity, height: 150)
-                            .opacity(0.4)
-                            .blur(radius: 5)
-                            .disabled(true)
-                            .overlay {
-                                VStack {
-                                    Label("Open", systemImage: "safari")
-                                        .padding(8)
-                                        .foregroundStyle(.white)
-                                        .background(Color.accentColor)
-                                        .clipShape(Capsule())
-                                        .bold()
-                                    
-                                    Text(URL(string: story.url)!.hostURL())
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(2)
-                                        .padding(.horizontal)
-                                }
-                            }
-                    } else {
-                        WebView(url: URL(string: story.url)!)
-                            .frame(width: .infinity, height: 150)
-                            .opacity(0.4)
-                            .blur(radius: 5)
-                            .disabled(true)
-                            .overlay {
-                                VStack {
-                                    Label("Open", systemImage: "safari")
-                                        .padding(8)
-                                        .foregroundStyle(.white)
-                                        .background(Color.accentColor)
-                                        .clipShape(Capsule())
-                                        .bold()
-                                    
-                                    Text(URL(string: story.url)!.hostURL())
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(2)
-                                        .padding(.horizontal)
-                                }
-                            }
-                    }
-                }
-                
                 Group {
                     Text(story.title)
                         .bold()
                         .font(.title)
+                        .padding(.top, 5)
                     
-                    Label(story.type.uppercased(), systemImage: "text.document")
+                    Button {
+                        openStory.toggle()
+                    } label: {
+                        HStack {
+                            AsyncImage(url: URL(string: "https://www.google.com/s2/favicons?sz=\(40)&domain=\(story.url)")) { i in
+                                i
+                                    .interpolation(.none)
+                                    .resizable()
+                                    .aspectRatio(1, contentMode: .fit)
+                                    .frame(width: 50, height: 50)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                            } placeholder: {
+                                ProgressView()
+                                    .controlSize(.large)
+                                    .frame(width: 50, height: 50)
+                            }
+                            
+                            Text(URL(string: story.url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
+                                .lineLimit(1)
+                        }
+                    }
+                    
+                    if let previewImageURL = getSocialMediaPreviewImage(for: URL(string: story.url)!) {
+                        Button {
+                            openStory.toggle()
+                        } label: {
+                            AsyncImage(url: URL(string: previewImageURL)!) { i in
+                                i.image?
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: .infinity, height: 200)
+                            }
+//                            .overlay {
+//                                VStack {
+//                                    Spacer()
+//                                    
+//                                    Label("Open", systemImage: "safari")
+//                                        .padding(8)
+//                                        .foregroundStyle(.white)
+//                                        .background(Color.accentColor)
+//                                        .clipShape(Capsule())
+//                                        .bold()
+//                                    
+//                                    Spacer()
+//                                    
+//                                    Text(URL(string: story.url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
+//                                        .lineLimit(1)
+//                                        .frame(maxWidth: .infinity)
+//                                        .background(.black.opacity(0.6))
+//                                }
+//                            }
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
                     
                     HStack {
-                        Label(story.by, systemImage: "person")
+                        Button {
+                            withAnimation {
+                                upvotedStory.toggle()
+                            }
+                        } label: {
+                            Label("\(story.score + (upvotedStory ? 1 : 0))", systemImage: upvotedStory ? "arrowshape.up.fill" : "arrowshape.up")
+                                .symbolEffect(.bounce, value: upvotedStory)
+                        }
+                        .bold()
                         
-                        Label("\(story.score)", systemImage: "arrowshape.up")
+                        NavigationLink {
+                            UserView(id: story.by)
+                        } label: {
+                            Label(story.by, systemImage: "person")
+                        }
+                        .bold()
                         
                         Label(story.time.timeIntervalToString(), systemImage: "clock")
                     }
+                    .padding(.top, 5)
+                    .foregroundStyle(.primary)
                 }
                 .padding(.horizontal)
                 
                 Divider()
                 
-                Text("\(comments.count) COMMENTS")
+                Text("\(story.descendants) COMMENTS")
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
                 
-                ForEach(comments, id: \.id) { comment in
-                    VStack {
-                        HStack {
-                            Label(comment.by, systemImage: "person")
-                                .foregroundStyle(Color.accentColor)
-                                .bold()
-                                .padding(.top, 5)
+                VStack {
+                    if let kids = story.kids {
+                        ForEach(kids, id: \.self) { i in
+                            CommentView(commentID: i, layer: 0, storyAuthor: story.by)
                             
-                            if comment.by == story.by {
-                                Label("OP", systemImage: "circle.fill")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.blue)
-                                    .bold()
-                                    .onTapGesture {
-                                        showOPExplainerAlert = true
-                                    }
-                                    .alert("The OP (original poster) is \(story.by).", isPresented: $showOPExplainerAlert) {}
-                            }
-                            
-                            Spacer()
-                            
-                            Text(comment.time.timeIntervalToString())
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        Text(comment.text)
-                            .padding(.vertical, 2)
-                        
-                        HStack {
-                            Button {} label: {
-                                Label("Upvote", systemImage: "arrowshape.up")
-                            }
-                            
-                            Spacer()
+                            Divider()
                         }
                     }
-                    
-                    Divider()
                 }
                 .padding(.horizontal)
-                //                }
                 
-                Divider()
-                
-                if !monitor.isActive {
-                    HStack {
-                        Spacer()
-                        
-                        VStack {
-                            Image(systemName: "exclamationmark.triangle")
-                                .foregroundStyle(.red)
-                                .bold()
-                                .font(.largeTitle)
-                            
-                            Text("You're offline.")
-                                .font(.headline)
-                                .bold()
-                            
-                            Button {
-                                Task {
-                                    isLoaded = false
-                                    isError = false
-                                    await refreshData()
-                                }
-                            } label: {
-                                Label("Try again", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
-                            }
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.top)
-                } else if isError {
-                    HStack {
-                        Spacer()
-                        
-                        VStack {
-                            Image(systemName: "exclamationmark.triangle")
-                                .foregroundStyle(.red)
-                                .bold()
-                                .font(.largeTitle)
-                            
-                            Text("An error occurred.")
-                                .font(.headline)
-                                .bold()
-                            
-                            Button {
-                                Task {
-                                    isLoaded = false
-                                    isError = false
-                                    await refreshData()
-                                }
-                            } label: {
-                                Label("Try again", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
-                            }
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.top)
-                } else if !isLoaded {
-                    HStack {
-                        Spacer()
-                        
-                        ProgressView()
-                            .controlSize(.extraLarge)
-                        
-                        Spacer()
-                    }
-                    .padding(.top)
-                }
+//                if !monitor.isActive {
+//                    HStack {
+//                        Spacer()
+//
+//                        VStack {
+//                            Image(systemName: "exclamationmark.triangle")
+//                                .foregroundStyle(.red)
+//                                .bold()
+//                                .font(.largeTitle)
+//
+//                            Text("You're offline.")
+//                                .font(.headline)
+//                                .bold()
+//
+//                            Button {
+////                                Task {
+////                                    isLoaded = false
+////                                    isError = false
+////                                    await refreshData()
+////                                }
+//                            } label: {
+//                                Label("Try again", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
+//                            }
+//                        }
+//
+//                        Spacer()
+//                    }
+//                    .padding(.top)
+//                } else if isError {
+//                    HStack {
+//                        Spacer()
+//                        
+//                        VStack {
+//                            Image(systemName: "exclamationmark.triangle")
+//                                .foregroundStyle(.red)
+//                                .bold()
+//                                .font(.largeTitle)
+//                            
+//                            Text("An error occurred.")
+//                                .font(.headline)
+//                                .bold()
+//                            
+//                            Button {
+////                                Task {
+////                                    isLoaded = false
+////                                    isError = false
+////                                    await refreshData()
+////                                }
+//                            } label: {
+//                                Label("Try again", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
+//                            }
+//                        }
+//                        
+//                        Spacer()
+//                    }
+//                    .padding(.top)
+//                } else if !isLoaded {
+//                    HStack {
+//                        Spacer()
+//                        
+//                        ProgressView()
+//                            .controlSize(.extraLarge)
+//                        
+//                        Spacer()
+//                    }
+//                    .padding(.top)
+//                }
             }
         }
         .refreshable {
-            Task {
-                await refreshData()
-            }
+//            Task {
+//                await refreshData()
+//            }
         }
         .onAppear {
             modelContext.insert(StoryStorage(id: story.id, userOpinion: .unknown, saved: false))
             
-            Task {
-                await refreshData()
-            }
+//            Task {
+//                await refreshData()
+//            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .toolbar {
@@ -303,8 +355,22 @@ struct StoryDetailView: View {
                 }
             }
         }
-        .navigationTitle(URL(string: story.url)!.hostURL())
+        .navigationTitle(URL(string: story.url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
         .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(isPresented: $openStory) {
+            if storyLoading {
+                ProgressView()
+                    .controlSize(.extraLarge)
+            }
+            
+            Button("Close Story") {
+                openStory.toggle()
+                storyLoading = false
+            }
+            
+            WebView(url: URL(string: story.url)!, storyLoading: $storyLoading)
+                .edgesIgnoringSafeArea(.all)
+        }
     }
 }
 
