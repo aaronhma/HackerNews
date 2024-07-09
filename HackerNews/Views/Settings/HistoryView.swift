@@ -15,6 +15,8 @@ struct HistoryView: View {
     
     @Query(sort: \StoryStorage.id) var stories: [StoryStorage]
     
+    @State private var allDeleted = false
+    
     func delete(_ indexSet: IndexSet) {
         for i in indexSet {
             let story = stories[i]
@@ -24,7 +26,7 @@ struct HistoryView: View {
     
     var body: some View {
         VStack {
-            if stories.isEmpty {
+            if allDeleted || stories.isEmpty {
                 VStack {
                     Spacer()
                     
@@ -34,7 +36,7 @@ struct HistoryView: View {
                         .frame(height: 80)
                         .padding(.bottom, 10)
                     
-                    Text("No History Yet")
+                    Text("No History")
                         .font(.title)
                         .bold()
                         .padding(.bottom, 10)
@@ -50,11 +52,15 @@ struct HistoryView: View {
             }
             
             List {
-                if !stories.isEmpty {
+                if !allDeleted && !stories.isEmpty {
                     Section {
                         Button(role: .destructive) {
                             do {
                                 try modelContext.delete(model: StoryStorage.self)
+                                
+                                withAnimation {
+                                    allDeleted.toggle()
+                                }
                             } catch {
                                 print(error.localizedDescription)
                             }

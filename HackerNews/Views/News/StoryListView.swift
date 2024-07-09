@@ -14,6 +14,7 @@ struct StoryListView: View {
     @Query private var stories: [StoryStorage]
     
     var story: Story
+    var num: Int?
     
     @State private var openedStory = false
     
@@ -23,11 +24,20 @@ struct StoryListView: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            Text(URL(string: story.url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
-                .foregroundStyle(Color.accentColor)
-                .lineLimit(1)
+            if let url = story.url {
+                HStack {
+                    if let n = num {
+                        Text("\(n).")
+                    }
+                    
+                    Text(URL(string: url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
+                        .foregroundStyle(Color.accentColor)
+                        .lineLimit(1)
+                }
+            }
             
             Text(story.title)
+                .multilineTextAlignment(.leading)
                 .font(.title3)
                 .foregroundStyle(openedStory ? .secondary : .primary)
                 .lineLimit(3)
@@ -63,8 +73,12 @@ struct StoryListView: View {
                 Image(systemName: "bubble.left.and.bubble.right.fill")
                     .foregroundStyle(.secondary)
                 
-                Text("\(story.descendants)")
-                    .lineLimit(1)
+                if let descendants = story.descendants {
+                    Text("\(descendants)")
+                        .lineLimit(1)
+                } else {
+                    Text("0")
+                }
                 
                 Spacer()
             }

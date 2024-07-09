@@ -51,7 +51,7 @@ struct TopStoriesView: View {
         do {
             let topStoriesURL = URL(string: selectedTabURL)!
             topStories = try await URLSession.shared.decode(from: topStoriesURL)
-//            print(topStories.count)
+            //            print(topStories.count)
         } catch {
             fatalError(error.localizedDescription)
         }
@@ -61,26 +61,39 @@ struct TopStoriesView: View {
     
     func downloadNextFewStories() async {
         guard !topStories.isEmpty else { return } // no stories
-        guard topStories.count >= numberOfStories else { return } // not enough stories
+                                                  //        guard topStories.count >= numberOfStories else { return } // not enough stories
         
         isLoaded = false
         currentBatchLoadedStories = 0
         
-        for _ in 0..<numberOfStories {
+        var tmpStories: [Story] = []
+        
+        for _ in currentStoriesIndex..<min(currentStoriesIndex + 10, topStories.count) {
             guard currentStoriesIndex < topStories.count else { return }
             
             do {
                 let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(topStories[currentStoriesIndex]).json")!
-//                print(storyURL.absoluteString, currentStoriesIndex, currentBatchLoadedStories)
+                //                print(storyURL.absoluteString, currentStoriesIndex, currentBatchLoadedStories)
                 currentStoriesIndex += 1
-                currentBatchLoadedStories += 1
-                let story = try await URLSession.shared.decode(Story.self, from: storyURL)
+                var story = try await URLSession.shared.decode(Story.self, from: storyURL)
                 
-                stories.append(story)
+                if story.url == nil {
+                    story.url = "https://news.ycombinator.com/item?id=\(story.id)"
+                }
+                
+                tmpStories.append(story)
+                currentBatchLoadedStories += 1
             } catch {
-//                isError = true
-                //                                print(error.localizedDescription)
+                //                isError = true
+                fatalError(error.localizedDescription)
             }
+        }
+        
+        currentStoriesIndex += 10
+        currentBatchLoadedStories = 0
+        
+        for i in tmpStories {
+            stories.append(i)
         }
         
         isLoaded = true
@@ -88,8 +101,8 @@ struct TopStoriesView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
-                List {
+            ScrollView {
+                LazyVStack(alignment: .leading) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         LazyHStack {
                             ForEach(Array(zip(tagName.indices, tagName)), id: \.0) { i, name in
@@ -130,6 +143,9 @@ struct TopStoriesView: View {
                                         .symbolEffect(.bounce, value: selectedTab == name)
                                         .bold(selectedTab == name)
                                 }
+                                .sensoryFeedback(.success, trigger: selectedTab)
+                                .padding(.leading, i == 0 ? 10 : 0)
+                                .padding(.trailing, i == tagName.count - 1 ? 10 : 0)
                             }
                         }
                     }
@@ -137,175 +153,182 @@ struct TopStoriesView: View {
                     .listRowSpacing(0)
                     .listRowSeparator(.hidden)
                     
-                    Section {} footer: {
-                        Text(Date.now, format: .dateTime.month(.wide).day())
-                            .foregroundStyle(.secondary)
-                            .font(.largeTitle)
-                            .bold()
-                    }
-                    .listRowSpacing(0)
-                    .listRowSeparator(.hidden)
-                    
-                    if !monitor.isActive && showOfflineMessage {
-                        Section {
-                            Button {
-                                showOfflineMessage = false
-                            } label: {
-                                HStack {
-                                    Image(systemName: "exclamationmark.triangle")
-                                        .foregroundStyle(.red)
-                                        .bold()
-                                    
-                                    Text("You're offline.")
-                                        .bold()
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
-                    
-                    if isError {
-                        Section {
-                            Button {
-                                Task {
-                                    isLoaded = false
-                                    isError = false
-                                    await refreshData()
-                                }
-                            } label: {
-                                HStack {
-                                    Image(systemName: "exclamationmark.triangle")
-                                        .foregroundStyle(.red)
-                                        .bold()
-                                    
-                                    Text("Unexpected error when loading stories.")
-                                        .bold()
-                                }
-                            }
-                        }
-                    }
-                    
-                    Section {
-                        ForEach(stories, id: \.id) { story in
-                            NavigationLink {
-                                StoryDetailView(story: story)
-                                // https://augmentedcode.io/2024/06/17/zoom-navigation-transition-in-swiftui/
-//                                    .apply {
-//                                        if #available(iOS 18.0, *) {
-//                                            .navigationTransition(.zoom(sourceID: story, in: namespace))
-//                                        } else {
-//                                            .background(.red)
-//                                        }
-//                                    }
-                            } label: {
-                                StoryListView(story: story)
-                            }
-                            .disabled(!monitor.isActive)
-                            .onAppear {
-                                if currentBatchLoadedStories + 1 == numberOfStories {
-                                    Task {
-                                        await downloadNextFewStories()
-                                    }
-                                }
-                            }
-                            .swipeActions(edge: .leading) {
-                                Button {} label: {
-                                    Label("Save", systemImage: "bookmark")
-                                }
-                                .tint(.indigo)
-                            }
-                            .swipeActions(edge: .trailing) {
-                                Button {
-                                    showShareSheet(url: URL(string: story.url)!)
-                                } label: {
-                                    Label("Share", systemImage: "square.and.arrow.up")
-                                }
-                                .tint(Color.blue)
-                            }
-                            .contextMenu {
-                                Section {
-                                    NavigationLink {
-                                        StoryDetailView(story: story)
-                                    } label: {
-                                        Label("Read Story", systemImage: "newspaper")
-                                    }
-                                    
-                                    NavigationLink {
-                                        UserView(id: story.by)
-                                    } label: {
-                                        Label("View Profile", systemImage: "person")
-                                    }
-                                }
-                                
-                                Section {
-                                    Button {} label: {
-                                        Label("Upvote", systemImage: "arrowshape.up")
-                                    }
-                                }
-                                
-                                Section {
-                                    Button {} label: {
-                                        Label("Save Story", systemImage: "bookmark")
-                                    }
-                                    
-                                    Button {
-                                        UIPasteboard.general.string = story.url
-                                    } label: {
-                                        Label("Copy Link", systemImage: "link")
-                                    }
-                                }
-                                
-                                Section {
-                                    Button(role: .destructive) {} label: {
-                                        Label("Block Topic", systemImage: "minus.circle")
-                                    }
-                                    
-                                    Button(role: .destructive) {} label: {
-                                        Label("Block Poster", systemImage: "hand.raised")
-                                    }
-                                }
-                            }
-                        }
-                        //                        .listRowSeparator(.hidden)
+                    Group {
+                        Text(Date.now, format: .dateTime.month(.wide).day().year())
+                                .foregroundStyle(.secondary)
+                                .font(.largeTitle)
+                                .bold()
                         
-                        if isLoaded && stories.isEmpty {
-                            VStack {
-                                Text("No stories found :'(.\nTry clearing your filters.")
-                            }
-                            
-                            Button {
-                                Task {
-                                    isLoaded = false
-                                    isError = false
-                                    await refreshData()
+                        if !monitor.isActive && showOfflineMessage {
+                            Section {
+                                Button {
+                                    showOfflineMessage = false
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "exclamationmark.triangle")
+                                            .foregroundStyle(.red)
+                                            .bold()
+                                        
+                                        Text("You're offline.")
+                                            .bold()
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
-                            } label: {
-                                Text("Clear Filters")
                             }
                         }
-                    }
-                    
-                    if !isLoaded {
-                        HStack {
-                            Spacer()
-                            ProgressView()
-                                .controlSize(.extraLarge)
-                            Spacer()
+                        
+                        if isError {
+                            Section {
+                                Button {
+                                    Task {
+                                        isLoaded = false
+                                        isError = false
+                                        await refreshData()
+                                    }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "exclamationmark.triangle")
+                                            .foregroundStyle(.red)
+                                            .bold()
+                                        
+                                        Text("Unexpected error when loading stories.")
+                                            .bold()
+                                    }
+                                }
+                            }
                         }
-                        .padding(.vertical)
-                        .listRowSeparator(.hidden)
+                        
+                        Section {
+                            ForEach(Array(zip(stories.indices, stories)), id: \.0) { i, story in
+                                NavigationLink {
+                                    StoryDetailView(story: story)
+                                    // https://augmentedcode.io/2024/06/17/zoom-navigation-transition-in-swiftui/
+                                    //                                    .apply {
+                                    //                                        if #available(iOS 18.0, *) {
+                                    //                                            .navigationTransition(.zoom(sourceID: story, in: namespace))
+                                    //                                        } else {
+                                    //                                            // empty modifer???
+                                    //                                        }
+                                    //                                    }
+                                } label: {
+                                    StoryListView(story: story, num: i + 1)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(!monitor.isActive)
+                                .onAppear {
+                                    if (i + 1) % numberOfStories == 0 {
+                                        print(i)
+                                        Task {
+                                            await downloadNextFewStories()
+                                        }
+                                    }
+                                }
+                                .swipeActions(edge: .leading) {
+                                    Button {} label: {
+                                        Label("Save", systemImage: "bookmark")
+                                    }
+                                    .tint(.indigo)
+                                }
+                                .swipeActions(edge: .trailing) {
+                                    Button {
+                                        if let url = story.url {
+                                            showShareSheet(url: URL(string: url)!)
+                                        }
+                                    } label: {
+                                        Label("Share", systemImage: "square.and.arrow.up")
+                                    }
+                                    .tint(Color.blue)
+                                }
+                                .contextMenu {
+                                    Section {
+                                        NavigationLink {
+                                            StoryDetailView(story: story)
+                                        } label: {
+                                            Label("Read Story", systemImage: "newspaper")
+                                        }
+                                        
+                                        NavigationLink {
+                                            UserView(id: story.by)
+                                        } label: {
+                                            Label("View Profile", systemImage: "person")
+                                        }
+                                    }
+                                    
+                                    Section {
+                                        Button {} label: {
+                                            Label("Upvote", systemImage: "arrowshape.up")
+                                        }
+                                    }
+                                    
+                                    Section {
+                                        Button {} label: {
+                                            Label("Save Story", systemImage: "bookmark")
+                                        }
+                                        
+                                        Button {
+                                            UIPasteboard.general.string = story.url
+                                        } label: {
+                                            Label("Copy Link", systemImage: "link")
+                                        }
+                                    }
+                                    
+                                    Section {
+                                        Button(role: .destructive) {} label: {
+                                            Label("Block Topic", systemImage: "minus.circle")
+                                        }
+                                        
+                                        Button(role: .destructive) {} label: {
+                                            Label("Block Poster", systemImage: "hand.raised")
+                                        }
+                                    }
+                                }
+                                
+                                if i != 499 {
+                                    Divider()
+                                }
+                            }
+                            //                        .listRowSeparator(.hidden)
+                            
+                            if isLoaded && stories.isEmpty {
+                                VStack {
+                                    Text("No stories found :'(.\nTry clearing your filters.")
+                                }
+                                
+                                Button {
+                                    Task {
+                                        isLoaded = false
+                                        isError = false
+                                        await refreshData()
+                                    }
+                                } label: {
+                                    Text("Clear Filters")
+                                }
+                            }
+                        }
+                        
+                        if !isLoaded {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .controlSize(.extraLarge)
+                                Spacer()
+                            }
+                            .padding(.vertical)
+                            .listRowSeparator(.hidden)
+                        }
                     }
+                    .padding(.horizontal)
                 }
                 .listStyle(.plain)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Section("Developer") {
+                        Section("View Options") {
                             Button {
                                 Task {
                                     isLoaded = false
@@ -317,7 +340,7 @@ struct TopStoriesView: View {
                             }
                         }
                     } label: {
-                        Label("Developer Options", systemImage: "hammer")
+                        Label("View Options", systemImage: "arrow.up.arrow.down")
                     }
                 }
             }

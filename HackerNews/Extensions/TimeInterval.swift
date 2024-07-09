@@ -32,7 +32,7 @@ extension TimeInterval {
         } else if let hours = components.hour, hours > 0 {
             return hours == 1 ? "1h ago" : "\(hours)h ago"
         } else if let minutes = components.minute, minutes > 0 {
-            return minutes == 1 ? "1m ago" : "\(minutes)min ago"
+            return minutes == 1 ? "1min ago" : "\(minutes)min ago"
         } else {
             return components.second == 1 ? "1s ago" : "\(components.second ?? 0)s ago"
         }

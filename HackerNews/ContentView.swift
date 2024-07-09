@@ -10,6 +10,8 @@ import SwiftUI
 struct ContentView: View {
     @State private var selectedTab = Tab.TopStories
     
+    @AppStorage("showOnboarding") private var showOnboarding = AppSettings.showOnboarding
+    
     enum Tab {
         case TopStories
         case Search
@@ -35,6 +37,13 @@ struct ContentView: View {
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }
+        }
+        .fullScreenCover(isPresented: $showOnboarding) {
+            Onboarding(showOnboarding: $showOnboarding)
+        }
+        .onAppear {
+            showOnboarding = true
+            print("show onboarding? \(showOnboarding)")
         }
     }
 }

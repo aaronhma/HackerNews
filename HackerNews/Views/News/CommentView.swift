@@ -16,6 +16,7 @@ struct CommentView: View {
     @State private var isError = false
     @State private var isLoaded = false
     
+    @State private var collapsedComment = false
     @State private var showOPExplainerAlert = false
     
     func refreshData() async {
@@ -27,7 +28,9 @@ struct CommentView: View {
             let commentURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(commentID).json")!
             comment = try await URLSession.shared.decode(Comment.self, from: commentURL)
         } catch {
-            print(error.localizedDescription)
+            comment = Comment(by: "[deleted]", id: 0, parent: 0, text: "[deleted]", time: Date.now.timeIntervalSince1970, type: "comment")
+            print(error.localizedDescription, commentID)
+            
             isError = true
         }
         
@@ -36,63 +39,77 @@ struct CommentView: View {
     
     var body: some View {
         VStack {
-            if isLoaded {
-                HStack {
-                    NavigationLink {
-                        UserView(id: comment.by)
-                    } label: {
-                        Label(comment.by, systemImage: "person")
-                            .foregroundStyle(Color.accentColor)
-                            .bold()
-                            .padding(.top, 5)
-                    }
-                    
-                    if storyAuthor == comment.by {
-                        Label("OP", systemImage: "circle.fill")
-                            .font(.subheadline)
-                            .foregroundStyle(.blue)
-                            .bold()
-                            .onTapGesture {
-                                showOPExplainerAlert = true
-                            }
-                            .alert("OP = Original Poster", isPresented: $showOPExplainerAlert) {}
-                        //                        .alert("The OP (original poster) is \(story.by).", isPresented: $showOPExplainerAlert) {}
-                    }
-                    
-                    Spacer()
-                    
-                    Button {} label: {
-                        Image(systemName: "arrowshape.up")
-                    }
-                    
-                    Text(comment.time.timeIntervalToString())
-                        .foregroundStyle(.secondary)
-                }
-                
-                HStack {
-                    Text(comment.text.parseHTML())
-                        .padding(.vertical, 2)
-                    
-                    Spacer()
-                }
-                
-                if let kids = comment.kids {
-                    ForEach(kids, id: \.self) { i in
-                        HStack {
+            if comment.text != "[deleted]" {
+                if isLoaded {
+                    ZStack(alignment: .leading) {
+                        if layer != 0 {
                             Rectangle()
-                                .fill(Color.gray)
-                                .frame(width: 2, height: .infinity)
-                            
-                            CommentView(commentID: i, layer: layer + 1, storyAuthor: storyAuthor)
-                            //                            .padding(.leading, CGFloat((layer + 1) * 5))
-                            
-                            //                        Divider()
+                                .fill(.secondary)
+                                .frame(width: 2)
+                                .frame(maxHeight: .infinity)
                         }
+                        
+                        VStack {
+                            HStack {
+                                NavigationLink {
+                                    UserView(id: comment.by)
+                                } label: {
+                                    Label(comment.by, systemImage: "person")
+                                        .lineLimit(1)
+                                        .foregroundStyle(Color.accentColor)
+                                        .bold()
+                                        .padding(.top, 5)
+                                }
+                                
+                                if storyAuthor == comment.by {
+                                    Label("OP", systemImage: "circle.fill")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.blue)
+                                        .bold()
+                                        .onTapGesture {
+                                            showOPExplainerAlert = true
+                                        }
+                                        .alert("OP = Original Poster\nThe OP is \(storyAuthor).", isPresented: $showOPExplainerAlert) {}
+                                }
+                                
+                                Spacer()
+                                
+                                Button {} label: {
+                                    Image(systemName: "arrowshape.up")
+                                }
+                                
+                                Button {
+                                    collapsedComment.toggle()
+                                } label: {
+                                    Label(collapsedComment ? "Open" : "Close", systemImage: collapsedComment ? "arrow.up.left.and.arrow.down.right" : "arrow.down.right.and.arrow.up.left")
+                                }
+                                
+                                Text(comment.time.timeIntervalToString())
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            if !collapsedComment {
+                                HStack {
+                                    Text(comment.text.parseHTML())
+                                        .padding(.vertical, 2)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    
+                                    Spacer()
+                                }
+                                
+                                if let kids = comment.kids {
+                                    ForEach(kids, id: \.self) { i in
+                                        CommentView(commentID: i, layer: layer + 1, storyAuthor: storyAuthor)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.leading, layer == 0 ? 0 : 10)
                     }
+                } else {
+                    ProgressView()
+                        .controlSize(.extraLarge)
                 }
-            } else {
-                ProgressView()
-                    .controlSize(.extraLarge)
             }
         }
         .onAppear {

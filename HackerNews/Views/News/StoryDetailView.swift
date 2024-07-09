@@ -60,33 +60,33 @@ struct StoryDetailView: View {
     @State private var upvotedStory = false
     @State private var storyLoading = true
     @State private var openStory = false
-//    @State private var isError = false
-//    @State private var isLoaded = false
-//    @State private var showOPExplainerAlert = false
+    //    @State private var isError = false
+    //    @State private var isLoaded = false
+    //    @State private var showOPExplainerAlert = false
     
-//    @State private var comments: [Comment] = []
+    //    @State private var comments: [Comment] = []
     
-//    func refreshData() async {
-//        comments = []
-//        isError = false
-//        isLoaded = false
-//        
-//        if let allComments = story.kids {
-//            for i in allComments {
-//                do {
-//                    let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(i).json")!
-//                    let comment = try await URLSession.shared.decode(Comment.self, from: storyURL)
-//                    
-//                    comments.append(comment)
-//                } catch {
-//                    print(error.localizedDescription)
-//                    isError = true
-//                }
-//            }
-//        }
-//        
-//        isLoaded = true
-//    }
+    //    func refreshData() async {
+    //        comments = []
+    //        isError = false
+    //        isLoaded = false
+    //
+    //        if let allComments = story.kids {
+    //            for i in allComments {
+    //                do {
+    //                    let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(i).json")!
+    //                    let comment = try await URLSession.shared.decode(Comment.self, from: storyURL)
+    //
+    //                    comments.append(comment)
+    //                } catch {
+    //                    print(error.localizedDescription)
+    //                    isError = true
+    //                }
+    //            }
+    //        }
+    //
+    //        isLoaded = true
+    //    }
     
     func getSocialMediaPreviewImage(for url: URL) -> String? {
         let semaphore = DispatchSemaphore(value: 0)
@@ -123,191 +123,207 @@ struct StoryDetailView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading) {
-                Group {
-                    Text(story.title)
-                        .bold()
-                        .font(.title)
-                        .padding(.top, 5)
-                    
-                    Button {
-                        openStory.toggle()
-                    } label: {
-                        HStack {
-                            AsyncImage(url: URL(string: "https://www.google.com/s2/favicons?sz=\(40)&domain=\(story.url)")) { i in
-                                i
-                                    .interpolation(.none)
-                                    .resizable()
-                                    .aspectRatio(1, contentMode: .fit)
-                                    .frame(width: 50, height: 50)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                            } placeholder: {
-                                ProgressView()
-                                    .controlSize(.large)
-                                    .frame(width: 50, height: 50)
-                            }
-                            
-                            Text(URL(string: story.url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
-                                .lineLimit(1)
-                        }
-                    }
-                    
-                    if let previewImageURL = getSocialMediaPreviewImage(for: URL(string: story.url)!) {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading) {
+                    Group {
+                        Text(story.title)
+                            .bold()
+                            .font(.title)
+                            .padding(.top, 5)
+                        
                         Button {
                             openStory.toggle()
                         } label: {
-                            AsyncImage(url: URL(string: previewImageURL)!) { i in
-                                i.image?
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: .infinity, height: 200)
+                            HStack {
+                                if let url = story.url {
+                                    AsyncImage(url: URL(string: "https://www.google.com/s2/favicons?sz=\(40)&domain=\(url)")) { i in
+                                        i
+                                            .interpolation(.none)
+                                            .resizable()
+                                            .aspectRatio(1, contentMode: .fit)
+                                            .frame(width: 50, height: 50)
+                                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    } placeholder: {
+                                        ProgressView()
+                                            .controlSize(.large)
+                                            .frame(width: 50, height: 50)
+                                    }
+                                }
+                                
+                                if let url = story.url {
+                                    Text(URL(string: url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
+                                        .lineLimit(1)
+                                }
                             }
-//                            .overlay {
-//                                VStack {
-//                                    Spacer()
-//                                    
-//                                    Label("Open", systemImage: "safari")
-//                                        .padding(8)
-//                                        .foregroundStyle(.white)
-//                                        .background(Color.accentColor)
-//                                        .clipShape(Capsule())
-//                                        .bold()
-//                                    
-//                                    Spacer()
-//                                    
-//                                    Text(URL(string: story.url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
-//                                        .lineLimit(1)
-//                                        .frame(maxWidth: .infinity)
-//                                        .background(.black.opacity(0.6))
-//                                }
-//                            }
                         }
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        
+                        if let text = story.text {
+                            Text(text.parseHTML())
+                        }
+                        
+                        if let url = story.url, let previewImageURL = getSocialMediaPreviewImage(for: URL(string: url)!) {
+                            Button {
+                                openStory.toggle()
+                            } label: {
+                                AsyncImage(url: URL(string: previewImageURL)!) { i in
+                                    i.image?
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: .infinity, height: 200)
+                                }
+                                //                            .overlay {
+                                //                                VStack {
+                                //                                    Spacer()
+                                //
+                                //                                    Label("Open", systemImage: "safari")
+                                //                                        .padding(8)
+                                //                                        .foregroundStyle(.white)
+                                //                                        .background(Color.accentColor)
+                                //                                        .clipShape(Capsule())
+                                //                                        .bold()
+                                //
+                                //                                    Spacer()
+                                //
+                                //                                    Text(URL(string: story.url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
+                                //                                        .lineLimit(1)
+                                //                                        .frame(maxWidth: .infinity)
+                                //                                        .background(.black.opacity(0.6))
+                                //                                }
+                                //                            }
+                            }
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        
+                        HStack {
+                            Button {
+                                withAnimation {
+                                    upvotedStory.toggle()
+                                }
+                            } label: {
+                                Label("\(story.score + (upvotedStory ? 1 : 0))", systemImage: upvotedStory ? "arrowshape.up.fill" : "arrowshape.up")
+                                    .symbolEffect(.bounce, value: upvotedStory)
+                            }
+                            .bold()
+                            
+                            NavigationLink {
+                                UserView(id: story.by)
+                            } label: {
+                                Label(story.by, systemImage: "person")
+                            }
+                            .bold()
+                            
+                            Label(story.time.timeIntervalToString(), systemImage: "clock")
+                        }
+                        .padding(.top, 5)
+                        .foregroundStyle(.primary)
+                    }
+                    .padding(.horizontal)
+                    
+                    Divider()
+                    
+                    if let descendants = story.descendants {
+                        Text("\(descendants) COMMENTS")
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal)
+                    } else {
+                        Text("0 COMMENTS")
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal)
                     }
                     
-                    HStack {
-                        Button {
-                            withAnimation {
-                                upvotedStory.toggle()
+                    VStack {
+                        if let kids = story.kids {
+                            ForEach(kids, id: \.self) { i in
+                                CommentView(commentID: i, layer: 0, storyAuthor: story.by)
+                                
+                                Divider()
                             }
-                        } label: {
-                            Label("\(story.score + (upvotedStory ? 1 : 0))", systemImage: upvotedStory ? "arrowshape.up.fill" : "arrowshape.up")
-                                .symbolEffect(.bounce, value: upvotedStory)
-                        }
-                        .bold()
-                        
-                        NavigationLink {
-                            UserView(id: story.by)
-                        } label: {
-                            Label(story.by, systemImage: "person")
-                        }
-                        .bold()
-                        
-                        Label(story.time.timeIntervalToString(), systemImage: "clock")
-                    }
-                    .padding(.top, 5)
-                    .foregroundStyle(.primary)
-                }
-                .padding(.horizontal)
-                
-                Divider()
-                
-                Text("\(story.descendants) COMMENTS")
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal)
-                
-                VStack {
-                    if let kids = story.kids {
-                        ForEach(kids, id: \.self) { i in
-                            CommentView(commentID: i, layer: 0, storyAuthor: story.by)
-                            
-                            Divider()
                         }
                     }
+                    .padding(.horizontal, 10)
+                    
+                    //                if !monitor.isActive {
+                    //                    HStack {
+                    //                        Spacer()
+                    //
+                    //                        VStack {
+                    //                            Image(systemName: "exclamationmark.triangle")
+                    //                                .foregroundStyle(.red)
+                    //                                .bold()
+                    //                                .font(.largeTitle)
+                    //
+                    //                            Text("You're offline.")
+                    //                                .font(.headline)
+                    //                                .bold()
+                    //
+                    //                            Button {
+                    ////                                Task {
+                    ////                                    isLoaded = false
+                    ////                                    isError = false
+                    ////                                    await refreshData()
+                    ////                                }
+                    //                            } label: {
+                    //                                Label("Try again", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
+                    //                            }
+                    //                        }
+                    //
+                    //                        Spacer()
+                    //                    }
+                    //                    .padding(.top)
+                    //                } else if isError {
+                    //                    HStack {
+                    //                        Spacer()
+                    //
+                    //                        VStack {
+                    //                            Image(systemName: "exclamationmark.triangle")
+                    //                                .foregroundStyle(.red)
+                    //                                .bold()
+                    //                                .font(.largeTitle)
+                    //
+                    //                            Text("An error occurred.")
+                    //                                .font(.headline)
+                    //                                .bold()
+                    //
+                    //                            Button {
+                    ////                                Task {
+                    ////                                    isLoaded = false
+                    ////                                    isError = false
+                    ////                                    await refreshData()
+                    ////                                }
+                    //                            } label: {
+                    //                                Label("Try again", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
+                    //                            }
+                    //                        }
+                    //
+                    //                        Spacer()
+                    //                    }
+                    //                    .padding(.top)
+                    //                } else if !isLoaded {
+                    //                    HStack {
+                    //                        Spacer()
+                    //
+                    //                        ProgressView()
+                    //                            .controlSize(.extraLarge)
+                    //
+                    //                        Spacer()
+                    //                    }
+                    //                    .padding(.top)
+                    //                }
                 }
-                .padding(.horizontal)
-                
-//                if !monitor.isActive {
-//                    HStack {
-//                        Spacer()
-//
-//                        VStack {
-//                            Image(systemName: "exclamationmark.triangle")
-//                                .foregroundStyle(.red)
-//                                .bold()
-//                                .font(.largeTitle)
-//
-//                            Text("You're offline.")
-//                                .font(.headline)
-//                                .bold()
-//
-//                            Button {
-////                                Task {
-////                                    isLoaded = false
-////                                    isError = false
-////                                    await refreshData()
-////                                }
-//                            } label: {
-//                                Label("Try again", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
-//                            }
-//                        }
-//
-//                        Spacer()
-//                    }
-//                    .padding(.top)
-//                } else if isError {
-//                    HStack {
-//                        Spacer()
-//                        
-//                        VStack {
-//                            Image(systemName: "exclamationmark.triangle")
-//                                .foregroundStyle(.red)
-//                                .bold()
-//                                .font(.largeTitle)
-//                            
-//                            Text("An error occurred.")
-//                                .font(.headline)
-//                                .bold()
-//                            
-//                            Button {
-////                                Task {
-////                                    isLoaded = false
-////                                    isError = false
-////                                    await refreshData()
-////                                }
-//                            } label: {
-//                                Label("Try again", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
-//                            }
-//                        }
-//                        
-//                        Spacer()
-//                    }
-//                    .padding(.top)
-//                } else if !isLoaded {
-//                    HStack {
-//                        Spacer()
-//                        
-//                        ProgressView()
-//                            .controlSize(.extraLarge)
-//                        
-//                        Spacer()
-//                    }
-//                    .padding(.top)
-//                }
             }
         }
         .refreshable {
-//            Task {
-//                await refreshData()
-//            }
+            //            Task {
+            //                await refreshData()
+            //            }
         }
         .onAppear {
             modelContext.insert(StoryStorage(id: story.id, userOpinion: .unknown, saved: false))
             
-//            Task {
-//                await refreshData()
-//            }
+            //            Task {
+            //                await refreshData()
+            //            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .toolbar {
@@ -318,8 +334,10 @@ struct StoryDetailView: View {
             }
             
             ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: URL(string: story.url)!) {
-                    Label("Share", systemImage: "square.and.arrow.up")
+                if let url = story.url {
+                    ShareLink(item: URL(string: url)!) {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
                 }
             }
             
@@ -355,7 +373,7 @@ struct StoryDetailView: View {
                 }
             }
         }
-        .navigationTitle(URL(string: story.url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
+        .navigationTitle("Comments")//URL(string: story.url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(isPresented: $openStory) {
             if storyLoading {
@@ -368,14 +386,15 @@ struct StoryDetailView: View {
                 storyLoading = false
             }
             
-            WebView(url: URL(string: story.url)!, storyLoading: $storyLoading)
-                .edgesIgnoringSafeArea(.all)
+            if let url = story.url {
+                WebView(url: URL(string: url)!, storyLoading: $storyLoading)
+                    .edgesIgnoringSafeArea(.all)
+            }
         }
     }
 }
 
 #Preview {
-    NavigationStack {
         StoryDetailView(
             story: Story(
                 by: "AUTHOR",
@@ -390,5 +409,4 @@ struct StoryDetailView: View {
             )
         )
         .modelContainer(for: StoryStorage.self, inMemory: true)
-    }
 }
