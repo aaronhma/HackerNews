@@ -15,6 +15,7 @@ struct StoryListView: View {
     
     var story: Story
     var num: Int?
+    var showOpenedStory = true
     
     @State private var openedStory = false
     
@@ -33,13 +34,25 @@ struct StoryListView: View {
                     Text(URL(string: url)!.hostURL().replacingOccurrences(of: "www.", with: ""))
                         .foregroundStyle(Color.accentColor)
                         .lineLimit(1)
+                    
+                    Image(systemName: "circle.fill")
+                        .resizable()
+                        .frame(width: 5, height: 5)
+                        .foregroundStyle(.secondary)
+                    
+                    Image(systemName: "clock.fill")
+                        .foregroundStyle(.secondary)
+                    
+                    Text(story.time.timeIntervalToString())
+                        .lineLimit(1)
+                        .foregroundStyle(.secondary)
                 }
             }
             
             Text(story.title)
                 .multilineTextAlignment(.leading)
                 .font(.title3)
-                .foregroundStyle(openedStory ? .secondary : .primary)
+                .foregroundStyle(openedStory && showOpenedStory ? .secondary : .primary)
                 .lineLimit(3)
                 .bold()
             
@@ -47,16 +60,6 @@ struct StoryListView: View {
                 Image(systemName: "person.circle.fill")
                 
                 Text(story.by)
-                    .lineLimit(1)
-                
-                Image(systemName: "circle.fill")
-                    .resizable()
-                    .frame(width: 5, height: 5)
-                    .foregroundStyle(.secondary)
-                
-                Image(systemName: "calendar.circle.fill")
-                
-                Text(story.time.timeIntervalToString())
                     .lineLimit(1)
                 
                 Image(systemName: "circle.fill")

@@ -13,20 +13,46 @@ struct HistoryView: View {
     
     @State private var selectedTab = "All"
     
-    @Query(sort: \StoryStorage.id) var stories: [StoryStorage]
+    @Query var history: [StoryStorage]
     
     @State private var allDeleted = false
     
     func delete(_ indexSet: IndexSet) {
         for i in indexSet {
-            let story = stories[i]
+            let story = history[i]
             modelContext.delete(story)
         }
     }
     
+    @State private var stories: [Story] = []
+    @State private var isLoaded = true
+    
+    @Namespace() var namespace
+    
+    func refreshData() async {
+        isLoaded = false
+        
+        for i in history {
+            do {
+                let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(i.id).json")!
+                var story = try await URLSession.shared.decode(Story.self, from: storyURL)
+                
+                if story.url == nil {
+                    story.url = "https://news.ycombinator.com/item?id=\(story.id)"
+                }
+                
+                stories.append(story)
+            } catch {
+                print(error.localizedDescription)
+            }
+        }
+        
+        isLoaded = true
+    }
+    
     var body: some View {
         VStack {
-            if allDeleted || stories.isEmpty {
+            if allDeleted || history.isEmpty {
                 VStack {
                     Spacer()
                     
@@ -52,7 +78,7 @@ struct HistoryView: View {
             }
             
             List {
-                if !allDeleted && !stories.isEmpty {
+                if !allDeleted && !history.isEmpty {
                     Section {
                         Button(role: .destructive) {
                             do {
@@ -70,18 +96,67 @@ struct HistoryView: View {
                         }
                     }
                     
-                    ForEach(stories) { story in
-                        Text("story id #: \(story.id)")
-                            .swipeActions(edge: .leading) {
-                                Button("Save", systemImage: story.saved ? "bookmark.slash" : "bookmark") {
-                                    story.saved.toggle()
+                    ForEach(Array(zip(stories.indices, stories)), id: \.0) { i, story in
+                        Section {
+                            NavigationLink {
+                                if #available(iOS 18.0, *) {
+                                    StoryDetailView(story: story)
+                                        .navigationTransition(.zoom(sourceID: story, in: namespace))
+                                } else {
+                                    StoryDetailView(story: story)
+                                }
+                            } label: {
+                                StoryListView(story: story, num: i + 1, showOpenedStory: false)
+                            }
+                            //                        .swipeActions(edge: .trailing) {
+                            //                            Button("Delete", systemImage: "trash", role: .destructive) {
+                            //                                modelContext.delete(story)
+                            //                            }
+                            //                        }
+                            .contextMenu {
+                                Section {
+                                    NavigationLink {
+                                        StoryDetailView(story: story)
+                                    } label: {
+                                        Label("Read Story", systemImage: "newspaper")
+                                    }
+                                    
+                                    NavigationLink {
+                                        UserView(id: story.by)
+                                    } label: {
+                                        Label("View Profile", systemImage: "person")
+                                    }
+                                }
+                                
+                                Section {
+                                    Button {} label: {
+                                        Label("Upvote", systemImage: "arrowshape.up")
+                                    }
+                                }
+                                
+                                Section {
+                                    Button {} label: {
+                                        Label("Save Story", systemImage: "bookmark")
+                                    }
+                                    
+                                    Button {
+                                        UIPasteboard.general.string = story.url
+                                    } label: {
+                                        Label("Copy Link", systemImage: "link")
+                                    }
+                                }
+                                
+                                Section {
+                                    Button(role: .destructive) {} label: {
+                                        Label("Block Topic", systemImage: "minus.circle")
+                                    }
+                                    
+                                    Button(role: .destructive) {} label: {
+                                        Label("Block Poster", systemImage: "hand.raised")
+                                    }
                                 }
                             }
-                            .swipeActions(edge: .trailing) {
-                                Button("Delete", systemImage: "trash", role: .destructive) {
-                                    modelContext.delete(story)
-                                }
-                            }
+                        }
                     }
                     .onDelete(perform: delete)
                 }
@@ -90,8 +165,18 @@ struct HistoryView: View {
         .navigationTitle("History")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if !stories.isEmpty {
+            if !allDeleted && !stories.isEmpty {
                 EditButton()
+            }
+        }
+        .onAppear {
+            Task {
+                await refreshData()
+            }
+        }
+        .refreshable {
+            Task {
+                await refreshData()
             }
         }
     }

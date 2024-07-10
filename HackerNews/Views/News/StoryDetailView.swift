@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import SwiftData
 import WebKit
 
 struct WebView: UIViewRepresentable {
@@ -54,6 +55,8 @@ struct StoryDetailView: View {
     private let monitor = NetworkMonitor()
     
     @Environment(\.modelContext) private var modelContext
+    
+    @Query private var stories: [StoryStorage]
     
     var story: Story
     
@@ -120,6 +123,10 @@ struct StoryDetailView: View {
         _ = semaphore.wait(timeout: .distantFuture)
         
         return previewImageURLString
+    }
+    
+    func openedStoryAlready() -> Bool {
+        return stories.contains(where: { $0.id == story.id })
     }
     
     var body: some View {
@@ -319,7 +326,9 @@ struct StoryDetailView: View {
             //            }
         }
         .onAppear {
-            modelContext.insert(StoryStorage(id: story.id, userOpinion: .unknown, saved: false))
+            if !openedStoryAlready() {
+                modelContext.insert(StoryStorage(id: story.id, userOpinion: .unknown, saved: false))
+            }
             
             //            Task {
             //                await refreshData()

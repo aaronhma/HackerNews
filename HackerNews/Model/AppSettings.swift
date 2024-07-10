@@ -8,5 +8,8 @@
 import Foundation
 
 enum AppSettings {
+    static let __ShowCopyright = true
     static let showOnboarding = true
+    
+    static let browserPreferenceInApp = true
 }

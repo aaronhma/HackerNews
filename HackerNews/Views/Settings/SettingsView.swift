@@ -27,6 +27,7 @@ struct SettingsBoxView: View {
 
 struct SettingsView: View {
     @State private var iCloudSync = false
+    @State private var fontSize = 12
     @State private var suggestedForYou = true
     @State private var sharedWithYou = false
     
@@ -39,7 +40,18 @@ struct SettingsView: View {
         (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "1.0"
     }
     
+    @AppStorage("__ShowCopyright") private var __ShowCopyright = AppSettings.__ShowCopyright
     @AppStorage("showOnboarding") private var showOnboarding = AppSettings.showOnboarding
+    @AppStorage("browserPreferenceInApp") private var browserPreferenceInApp = AppSettings.browserPreferenceInApp
+    
+    var intProxy: Binding<Double>{
+            Binding<Double>(get: {
+                return Double(fontSize)
+            }, set: {
+                print($0.description)
+                fontSize = Int($0)
+            })
+        }
     
     var body: some View {
         NavigationStack {
@@ -61,6 +73,16 @@ struct SettingsView: View {
                 Section {
                     NavigationLink {
                         List {
+                            Section("Text Size") {
+                                VStack {
+                                    Slider(value: intProxy, in: 4...100, step: 1.0)
+                                    Text("Font size: \(fontSize)")
+                                }
+                            }
+                            
+                            Section("Font") {
+                                Text("San Francisco (iOS System)")
+                            }
                         }
                         .navigationTitle("Text Size & Font")
                         .navigationBarTitleDisplayMode(.inline)
@@ -74,6 +96,62 @@ struct SettingsView: View {
                     
                     NavigationLink {
                         List {
+                            Section {
+                                Button {
+                                    browserPreferenceInApp = true
+                                } label: {
+                                    HStack {
+                                        Label("Built-in Internal Bark Browser", systemImage: "wand.and.sparkles")
+                                        
+                                        if browserPreferenceInApp {
+                                            Spacer()
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button {
+                                    browserPreferenceInApp = false
+                                } label: {
+                                    HStack {
+                                        Label("Use External Browser", systemImage: "safari")
+                                        
+                                        if !browserPreferenceInApp {
+                                            Spacer()
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            } header: {
+                                Text("Link Behavior")
+                            } footer: {
+                                if browserPreferenceInApp {
+                                    Text("You're getting the best reading experience possible! :)")
+                                } else {
+                                    Text("Bark's AI features like Pinch to Summarize and ad blocking aren't available on external browsers.")
+                                }
+                            }
+                            
+                            if browserPreferenceInApp {
+                                Section("Privacy") {
+                                    Toggle("Block Known Ad Networks", isOn: .constant(true))
+                                    Toggle("Block Known Trackers", isOn: .constant(true))
+                                }
+                                
+                                Section("Appearance") {
+                                    Toggle("Force Dark Mode", isOn: .constant(true))
+                                }
+                            }
+                            
+                            Section {
+                                Toggle("Show AI Summary Options", isOn: .constant(true))
+                            } header: {
+                                Text("AI Summary")
+                            } footer: {
+                                Text("You need your own ChatGPT API key.")
+                            }
                         }
                         .navigationTitle("Browsing")
                         .navigationBarTitleDisplayMode(.inline)
@@ -231,6 +309,7 @@ struct SettingsView: View {
                                             .symbolEffect(.bounce, value: openedNetwork)
                                         }
                                     }
+                                    .sensoryFeedback(.impact, trigger: openedNetwork)
                                     
                                     GroupBox {
                                         if openedNetworkOptions {
@@ -268,17 +347,19 @@ struct SettingsView: View {
                                             .symbolEffect(.bounce, value: openedNetworkOptions)
                                         }
                                     }
+                                    .sensoryFeedback(.impact, trigger: openedNetworkOptions)
                                     
                                     GroupBox {
                                         if openedDataUsage {
                                             Divider()
                                             VStack {
-                                                ProgressView(value: 100, total: 100)                                 .progressViewStyle(.linear)
+                                                ProgressView(value: 100, total: 100)
+                                                    .progressViewStyle(.linear)
                                                     .padding(.vertical)
                                                     .overlay {
                                                         Text("1GB/1GB allocated")
                                                             .bold()
-                                                            .foregroundStyle(.white)
+                                                            .font(.system(size: 8))
                                                     }
                                             }
                                             
@@ -334,6 +415,7 @@ struct SettingsView: View {
                                             .symbolEffect(.bounce, value: openedDataUsage)
                                         }
                                     }
+                                    .sensoryFeedback(.impact, trigger: openedDataUsage)
                                 }
                                 .padding(.horizontal)
                             }
@@ -392,6 +474,7 @@ struct SettingsView: View {
                         Text("With 🥰 from Cupertino, CA.")
                         
                         Button {
+                            __ShowCopyright = true
                             showOnboarding = true
                         } label: {
                             Text("Show Onboarding")

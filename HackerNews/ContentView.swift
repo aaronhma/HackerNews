@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var selectedTab = Tab.TopStories
     
+    @AppStorage("__ShowCopyright") private var __ShowCopyright = AppSettings.__ShowCopyright
     @AppStorage("showOnboarding") private var showOnboarding = AppSettings.showOnboarding
     
     enum Tab {
@@ -38,11 +39,11 @@ struct ContentView: View {
                     Label("Settings", systemImage: "gearshape")
                 }
         }
-        .fullScreenCover(isPresented: $showOnboarding) {
-            Onboarding(showOnboarding: $showOnboarding)
+        .fullScreenCover(isPresented: $__ShowCopyright) {
+            Onboarding(drm: $__ShowCopyright, showOnboarding: $showOnboarding)
         }
         .onAppear {
-            showOnboarding = true
+            __ShowCopyright = true
             print("show onboarding? \(showOnboarding)")
         }
     }

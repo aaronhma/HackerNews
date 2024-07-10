@@ -15,6 +15,8 @@ func showShareSheet(url: URL) {
 struct TopStoriesView: View {
     private let monitor = NetworkMonitor()
     
+    @Environment(\.colorScheme) var colorScheme
+    
     @State private var isError = false
     @State private var isLoaded = false
     @State private var topStories: [Int] = []
@@ -137,8 +139,8 @@ struct TopStoriesView: View {
                                     Label(name, systemImage: selectedTab == name ? "\(tagIcon[i]).fill" : tagIcon[i])
                                         .padding(.vertical, 8)
                                         .padding(.horizontal, 8)
-                                        .background(selectedTab == name ? .blue : .secondary)
-                                        .foregroundStyle(.white)
+                                        .background(selectedTab == name ? .blue : .secondary.opacity(0.35))
+                                        .foregroundStyle(colorScheme == .dark ? .white : (selectedTab == name ? .white : .black))
                                         .clipShape(RoundedRectangle(cornerRadius: 10))
                                         .symbolEffect(.bounce, value: selectedTab == name)
                                         .bold(selectedTab == name)
@@ -205,7 +207,12 @@ struct TopStoriesView: View {
                         Section {
                             ForEach(Array(zip(stories.indices, stories)), id: \.0) { i, story in
                                 NavigationLink {
-                                    StoryDetailView(story: story)
+                                    if #available(iOS 18.0, *) {
+                                        StoryDetailView(story: story)
+                                            .navigationTransition(.zoom(sourceID: story, in: namespace))
+                                    } else {
+                                        StoryDetailView(story: story)
+                                    }
                                     // https://augmentedcode.io/2024/06/17/zoom-navigation-transition-in-swiftui/
                                     //                                    .apply {
                                     //                                        if #available(iOS 18.0, *) {
@@ -243,16 +250,30 @@ struct TopStoriesView: View {
                                     }
                                     .tint(Color.blue)
                                 }
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                       .fill(Color(UIColor.systemBackground))
+                                )
                                 .contextMenu {
                                     Section {
                                         NavigationLink {
-                                            StoryDetailView(story: story)
+                                            if #available(iOS 18.0, *) {
+                                                StoryDetailView(story: story)
+                                                    .navigationTransition(.zoom(sourceID: story, in: namespace))
+                                            } else {
+                                                StoryDetailView(story: story)
+                                            }
                                         } label: {
                                             Label("Read Story", systemImage: "newspaper")
                                         }
                                         
                                         NavigationLink {
-                                            UserView(id: story.by)
+                                            if #available(iOS 18.0, *) {
+                                                UserView(id: story.by)
+                                                    .navigationTransition(.zoom(sourceID: story, in: namespace))
+                                            } else {
+                                                UserView(id: story.by)
+                                            }
                                         } label: {
                                             Label("View Profile", systemImage: "person")
                                         }
@@ -285,6 +306,9 @@ struct TopStoriesView: View {
                                             Label("Block Poster", systemImage: "hand.raised")
                                         }
                                     }
+                                } preview: {
+                                    StoryListView(story: story)
+                                        .padding(20)
                                 }
                                 
                                 if i != 499 {

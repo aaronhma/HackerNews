@@ -56,6 +56,9 @@ struct OnboardingItem: View {
 struct OnboardingPage1: View {
     @State private var animate = false
     
+    @AppStorage("showOnboarding") private var showOnboarding = AppSettings.showOnboarding
+    
+    @Binding var drm: Bool
     @Binding var termsAgreed: Bool
     
     var body: some View {
@@ -69,8 +72,8 @@ struct OnboardingPage1: View {
                     
                     Image(uiImage: Bundle.main.icon ?? UIImage())
                         .resizable()
-                        .frame(width: 80, height: 80)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .frame(width: 150, height: 150)
+                        .clipShape(RoundedRectangle(cornerRadius: 32))
                         .shadow(color: .accentColor, radius: 5)
                         .offset(x: animate ? 0 : geometry.size.width - 64, y: animate ? 0 : geometry.size.height - 64)
                         .animation(.easeInOut(duration: 1.5), value: animate)
@@ -96,7 +99,11 @@ struct OnboardingPage1: View {
                     
                     Button {
                         withAnimation(.easeInOut(duration: 1.0)) {
-                            termsAgreed.toggle()
+                            if !showOnboarding {
+                                drm.toggle()
+                            } else {
+                                termsAgreed.toggle()
+                            }
                         }
                     } label: {
                         Text("Agree & Continue")
@@ -109,6 +116,7 @@ struct OnboardingPage1: View {
                     .clipShape(RoundedRectangle(cornerRadius: 22))
                     .padding(.horizontal)
                     .sensoryFeedback(.success, trigger: termsAgreed)
+                    .sensoryFeedback(.success, trigger: drm)
                 }
                 .opacity(animate ? 1 : 0)
                 .animation(.easeInOut(duration: 1.5), value: animate)
@@ -131,6 +139,7 @@ struct OnboardingPage2: View {
     var icons = ["newspaper.fill", "brain.fill", "cpu.fill", "hand.raised.fill", "slider.vertical.3", "hand.wave.fill", "hand.thumbsup"]
     var colors = [Color.orange, .indigo, .teal, .pink, .purple, .green, .black]
     
+    @Binding var drm: Bool
     @Binding var showOnboarding: Bool
     
     var body: some View {
@@ -156,6 +165,7 @@ struct OnboardingPage2: View {
                 
                 Button {
                     withAnimation(.easeInOut(duration: 3.0)) {
+                        drm.toggle()
                         showOnboarding.toggle()
                     }
                 } label: {
@@ -177,17 +187,18 @@ struct OnboardingPage2: View {
 struct Onboarding: View {
     @State private var termsAgreed = false
     
+    @Binding var drm: Bool
     @Binding var showOnboarding: Bool
     
     var body: some View {
         if termsAgreed {
-            OnboardingPage2(showOnboarding: $showOnboarding)
+            OnboardingPage2(drm: $drm, showOnboarding: $showOnboarding)
         } else {
-            OnboardingPage1(termsAgreed: $termsAgreed)
+            OnboardingPage1(drm: $drm, termsAgreed: $termsAgreed)
         }
     }
 }
 
 #Preview {
-    Onboarding(showOnboarding: .constant(true))
+    Onboarding(drm: .constant(true), showOnboarding: .constant(true))
 }
