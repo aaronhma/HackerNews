@@ -40,9 +40,6 @@ struct StoryListView: View {
                         .frame(width: 5, height: 5)
                         .foregroundStyle(.secondary)
                     
-                    Image(systemName: "clock.fill")
-                        .foregroundStyle(.secondary)
-                    
                     Text(story.time.timeIntervalToString())
                         .lineLimit(1)
                         .foregroundStyle(.secondary)

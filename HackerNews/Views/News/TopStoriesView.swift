@@ -17,18 +17,23 @@ struct TopStoriesView: View {
     
     @Environment(\.colorScheme) var colorScheme
     
+    @State private var currentTime = Date()
+    let timer = Timer.publish(every: 3600, on: .main, in: .common).autoconnect() // 3600 seconds = 1 hour
+    
     @State private var isError = false
     @State private var isLoaded = false
+    @State private var autoRefreshAlert = false
     @State private var topStories: [Int] = []
+    @State private var cachedStories: [Story] = []
     @State private var stories: [Story] = []
     
     @State private var selectedTab = "Top Stories"
     @State private var selectedTabURL = "https://hacker-news.firebaseio.com/v0/topstories.json"
     
-    @State private var currentStoriesIndex = 0
-    @State private var currentBatchLoadedStories = 0
     @State private var numberOfStories = 10
     @State private var showOfflineMessage = true
+    
+    @State private var scrollToIndex: Int? = nil
     
     @Namespace() var namespace
     
@@ -38,8 +43,6 @@ struct TopStoriesView: View {
     func refreshData() async {
         topStories = []
         stories = []
-        currentStoriesIndex = 0
-        currentBatchLoadedStories = 0
         isError = false
         isLoaded = false
         
@@ -48,54 +51,45 @@ struct TopStoriesView: View {
         config.allowsExpensiveNetworkAccess = true
         config.allowsConstrainedNetworkAccess = true
         config.waitsForConnectivity = true
-        config.requestCachePolicy = .reloadIgnoringCacheData
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
         
         do {
             let topStoriesURL = URL(string: selectedTabURL)!
             topStories = try await URLSession.shared.decode(from: topStoriesURL)
-            //            print(topStories.count)
         } catch {
+            isError = true
             fatalError(error.localizedDescription)
         }
         
-        await downloadNextFewStories()
-    }
-    
-    func downloadNextFewStories() async {
-        guard !topStories.isEmpty else { return } // no stories
-                                                  //        guard topStories.count >= numberOfStories else { return } // not enough stories
-        
-        isLoaded = false
-        currentBatchLoadedStories = 0
-        
-        var tmpStories: [Story] = []
-        
-        for _ in currentStoriesIndex..<min(currentStoriesIndex + 10, topStories.count) {
-            guard currentStoriesIndex < topStories.count else { return }
-            
+        for i in topStories {
             do {
-                let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(topStories[currentStoriesIndex]).json")!
+                let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(i).json")!
                 //                print(storyURL.absoluteString, currentStoriesIndex, currentBatchLoadedStories)
-                currentStoriesIndex += 1
                 var story = try await URLSession.shared.decode(Story.self, from: storyURL)
                 
                 if story.url == nil {
                     story.url = "https://news.ycombinator.com/item?id=\(story.id)"
                 }
                 
-                tmpStories.append(story)
-                currentBatchLoadedStories += 1
+                cachedStories.append(story)
+                
+                if !cachedStories.isEmpty && cachedStories.count % numberOfStories == 0 {
+                    for j in cachedStories.count - numberOfStories..<cachedStories.count {
+                        stories.append(cachedStories[j])
+                    }
+                    
+                    autoRefreshAlert = false
+                }
+                
+#if targetEnvironment(simulator)
+                if stories.count == 20 {
+                    break
+                }
+#endif
             } catch {
-                //                isError = true
+                isError = true
                 fatalError(error.localizedDescription)
             }
-        }
-        
-        currentStoriesIndex += 10
-        currentBatchLoadedStories = 0
-        
-        for i in tmpStories {
-            stories.append(i)
         }
         
         isLoaded = true
@@ -103,8 +97,8 @@ struct TopStoriesView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(alignment: .leading) {
+            List {
+                ScrollViewReader { proxy in
                     ScrollView(.horizontal, showsIndicators: false) {
                         LazyHStack {
                             ForEach(Array(zip(tagName.indices, tagName)), id: \.0) { i, name in
@@ -130,16 +124,16 @@ struct TopStoriesView: View {
                                         }
                                         
                                         Task {
-                                            isLoaded = false
-                                            isError = false
                                             await refreshData()
                                         }
+                                        
+                                        proxy.scrollTo(i, anchor: .center)
                                     }
                                 } label: {
                                     Label(name, systemImage: selectedTab == name ? "\(tagIcon[i]).fill" : tagIcon[i])
                                         .padding(.vertical, 8)
                                         .padding(.horizontal, 8)
-                                        .background(selectedTab == name ? .blue : .secondary.opacity(0.35))
+                                        .background(selectedTab == name ? .blue : .secondary.opacity(0.15))
                                         .foregroundStyle(colorScheme == .dark ? .white : (selectedTab == name ? .white : .black))
                                         .clipShape(RoundedRectangle(cornerRadius: 10))
                                         .symbolEffect(.bounce, value: selectedTab == name)
@@ -151,61 +145,85 @@ struct TopStoriesView: View {
                             }
                         }
                     }
-                    .frame(height: 50)
-                    .listRowSpacing(0)
+                    .onChange(of: scrollToIndex) {
+                        withAnimation {
+                            if let newIndex = scrollToIndex {
+                                proxy.scrollTo(newIndex, anchor: .center)
+                            }
+                        }
+                    }
+                }
+                .frame(height: 50)
+                .listRowInsets(EdgeInsets())
+                .listRowSpacing(0)
+                .listRowSeparator(.hidden)
+                
+                Text(currentTime, format: .dateTime.month(.wide).day().year())
                     .listRowSeparator(.hidden)
-                    
-                    Group {
-                        Text(Date.now, format: .dateTime.month(.wide).day().year())
-                                .foregroundStyle(.secondary)
-                                .font(.largeTitle)
-                                .bold()
+                    .foregroundStyle(.secondary)
+                    .font(.largeTitle)
+                    .bold()
+                
+                if autoRefreshAlert {
+                    HStack {
+                        Image(systemName: "newspaper")
+                            .bold()
                         
-                        if !monitor.isActive && showOfflineMessage {
-                            Section {
-                                Button {
-                                    showOfflineMessage = false
-                                } label: {
-                                    HStack {
-                                        Image(systemName: "exclamationmark.triangle")
-                                            .foregroundStyle(.red)
-                                            .bold()
-                                        
-                                        Text("You're offline.")
-                                            .bold()
-                                        
-                                        Spacer()
-                                        
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
+                        Text("Checking for new stories...")
+                            .bold()
+                    }
+                }
+                
+                if !monitor.isActive && showOfflineMessage {
+                    Section {
+                        Button {
+                            showOfflineMessage = false
+                        } label: {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundStyle(.red)
+                                    .bold()
+                                
+                                Text("You're offline.")
+                                    .bold()
+                                
+                                Spacer()
+                                
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
                             }
                         }
-                        
-                        if isError {
-                            Section {
-                                Button {
-                                    Task {
-                                        isLoaded = false
-                                        isError = false
-                                        await refreshData()
-                                    }
-                                } label: {
-                                    HStack {
-                                        Image(systemName: "exclamationmark.triangle")
-                                            .foregroundStyle(.red)
-                                            .bold()
-                                        
-                                        Text("Unexpected error when loading stories.")
-                                            .bold()
-                                    }
-                                }
+                    }
+                    .listRowSeparator(.hidden)
+                }
+                
+                if isError {
+                    Section {
+                        Button {
+                            Task {
+                                await refreshData()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundStyle(.red)
+                                    .bold()
+                                
+                                Text("Unexpected error when loading stories.")
+                                    .bold()
                             }
                         }
-                        
-                        Section {
-                            ForEach(Array(zip(stories.indices, stories)), id: \.0) { i, story in
+                    }
+                    .listRowSeparator(.hidden)
+                }
+                
+                Section {
+                    ForEach(Array(zip(stories.indices, stories)), id: \.0) { i, story in
+                        StoryListView(story: story, num: i + 1)
+                            .allowsHitTesting(true)
+                            .padding(.vertical, 5)
+                            .padding(.horizontal)
+                            .overlay {
                                 NavigationLink {
                                     if #available(iOS 18.0, *) {
                                         StoryDetailView(story: story)
@@ -213,34 +231,56 @@ struct TopStoriesView: View {
                                     } else {
                                         StoryDetailView(story: story)
                                     }
-                                    // https://augmentedcode.io/2024/06/17/zoom-navigation-transition-in-swiftui/
-                                    //                                    .apply {
-                                    //                                        if #available(iOS 18.0, *) {
-                                    //                                            .navigationTransition(.zoom(sourceID: story, in: namespace))
-                                    //                                        } else {
-                                    //                                            // empty modifer???
-                                    //                                        }
-                                    //                                    }
                                 } label: {
-                                    StoryListView(story: story, num: i + 1)
+                                    EmptyView()
                                 }
+                                .opacity(0)
+                                .listRowInsets(EdgeInsets())
                                 .buttonStyle(PlainButtonStyle())
-                                .disabled(!monitor.isActive)
-                                .onAppear {
-                                    if (i + 1) % numberOfStories == 0 {
-                                        print(i)
-                                        Task {
-                                            await downloadNextFewStories()
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .listRowInsets(EdgeInsets())
+                            .listRowSpacing(5)
+                            .listRowSeparatorTint(.secondary)
+                            .disabled(!monitor.isActive)
+                            .contextMenu {
+                                Section {
+                                    NavigationLink {
+                                        if #available(iOS 18.0, *) {
+                                            StoryDetailView(story: story)
+                                                .navigationTransition(.zoom(sourceID: story, in: namespace))
+                                        } else {
+                                            StoryDetailView(story: story)
                                         }
+                                    } label: {
+                                        Label("Read Story", systemImage: "newspaper")
+                                    }
+                                    
+                                    NavigationLink {
+                                        if #available(iOS 18.0, *) {
+                                            UserView(id: story.by)
+                                                .navigationTransition(.zoom(sourceID: story, in: namespace))
+                                        } else {
+                                            UserView(id: story.by)
+                                        }
+                                    } label: {
+                                        Label("View Profile", systemImage: "person")
                                     }
                                 }
-                                .swipeActions(edge: .leading) {
+                                
+                                Section {
                                     Button {} label: {
-                                        Label("Save", systemImage: "bookmark")
+                                        Label("Upvote", systemImage: "arrowshape.up")
                                     }
-                                    .tint(.indigo)
                                 }
-                                .swipeActions(edge: .trailing) {
+                                
+                                Section {
+                                    Button {} label: {
+                                        Label("Save Story", systemImage: "bookmark")
+                                    }
+                                }
+                                
+                                Section {
                                     Button {
                                         if let url = story.url {
                                             showShareSheet(url: URL(string: url)!)
@@ -248,108 +288,70 @@ struct TopStoriesView: View {
                                     } label: {
                                         Label("Share", systemImage: "square.and.arrow.up")
                                     }
-                                    .tint(Color.blue)
-                                }
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                       .fill(Color(UIColor.systemBackground))
-                                )
-                                .contextMenu {
-                                    Section {
-                                        NavigationLink {
-                                            if #available(iOS 18.0, *) {
-                                                StoryDetailView(story: story)
-                                                    .navigationTransition(.zoom(sourceID: story, in: namespace))
-                                            } else {
-                                                StoryDetailView(story: story)
-                                            }
-                                        } label: {
-                                            Label("Read Story", systemImage: "newspaper")
-                                        }
-                                        
-                                        NavigationLink {
-                                            if #available(iOS 18.0, *) {
-                                                UserView(id: story.by)
-                                                    .navigationTransition(.zoom(sourceID: story, in: namespace))
-                                            } else {
-                                                UserView(id: story.by)
-                                            }
-                                        } label: {
-                                            Label("View Profile", systemImage: "person")
-                                        }
-                                    }
                                     
-                                    Section {
-                                        Button {} label: {
-                                            Label("Upvote", systemImage: "arrowshape.up")
-                                        }
+                                    Button {
+                                        UIPasteboard.general.string = story.url
+                                    } label: {
+                                        Label("Copy Link", systemImage: "link")
                                     }
-                                    
-                                    Section {
-                                        Button {} label: {
-                                            Label("Save Story", systemImage: "bookmark")
-                                        }
-                                        
-                                        Button {
-                                            UIPasteboard.general.string = story.url
-                                        } label: {
-                                            Label("Copy Link", systemImage: "link")
-                                        }
-                                    }
-                                    
-                                    Section {
-                                        Button(role: .destructive) {} label: {
-                                            Label("Block Topic", systemImage: "minus.circle")
-                                        }
-                                        
-                                        Button(role: .destructive) {} label: {
-                                            Label("Block Poster", systemImage: "hand.raised")
-                                        }
-                                    }
-                                } preview: {
-                                    StoryListView(story: story)
-                                        .padding(20)
                                 }
                                 
-                                if i != 499 {
-                                    Divider()
-                                }
-                            }
-                            //                        .listRowSeparator(.hidden)
-                            
-                            if isLoaded && stories.isEmpty {
-                                VStack {
-                                    Text("No stories found :'(.\nTry clearing your filters.")
-                                }
-                                
-                                Button {
-                                    Task {
-                                        isLoaded = false
-                                        isError = false
-                                        await refreshData()
+                                Section {
+                                    Button(role: .destructive) {} label: {
+                                        Label("Block Topic", systemImage: "minus.circle")
                                     }
-                                } label: {
-                                    Text("Clear Filters")
+                                    
+                                    Button(role: .destructive) {} label: {
+                                        Label("Block Poster", systemImage: "hand.raised")
+                                    }
                                 }
                             }
+                    }
+                    .listRowInsets(EdgeInsets())
+                    
+                    if isLoaded && stories.isEmpty {
+                        VStack {
+                            Text("No stories found :'(.\nTry clearing your filters.")
                         }
                         
-                        if !isLoaded {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .controlSize(.extraLarge)
-                                Spacer()
+                        Button {
+                            Task {
+                                await refreshData()
                             }
-                            .padding(.vertical)
-                            .listRowSeparator(.hidden)
+                        } label: {
+                            Text("Clear Filters")
                         }
                     }
-                    .padding(.horizontal)
                 }
-                .listStyle(.plain)
+                
+                if !isLoaded {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .controlSize(.extraLarge)
+                        Spacer()
+                    }
+                    .padding(.vertical)
+                    .listRowSeparator(.hidden)
+                }
+            }
+            .listStyle(.plain)
+            .refreshable {
+                self.currentTime = Date()
+                
+                Task {
+                    await refreshData()
+                }
             }
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        SubmitPostView()
+                    } label: {
+                        Label("Submit Post", systemImage: "plus")
+                    }
+                }
+                
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Section("View Options") {
@@ -368,18 +370,100 @@ struct TopStoriesView: View {
                     }
                 }
             }
-            .refreshable {
-                Task {
-                    await refreshData()
-                }
-            }
             .navigationTitle(monitor.isActive ? selectedTab : "Offline")
         }
         .onAppear {
             Task {
                 await refreshData()
             }
+            
+            NotificationCenter.default.addObserver(forName: .NSCalendarDayChanged, object: nil, queue: .main) { _ in
+                autoRefreshAlert = true
+                self.currentTime = Date()
+                
+                Task {
+                    await refreshData()
+                }
+            }
         }
+        .onReceive(timer) { _ in
+            autoRefreshAlert = true
+            self.currentTime = Date()
+            
+            Task {
+                await refreshData()
+            }
+        }
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    if value.translation.width < -50 {
+                        withAnimation {
+                            if let index = tagName.firstIndex(of: selectedTab) {
+                                let idx = (index + 1) % tagName.count
+                                selectedTab = tagName[idx]
+                                scrollToIndex = idx
+                            } else {
+                                fatalError("[ERROR] selectedTab doesn't work")
+                            }
+                            
+                            selectedTabURL = switch selectedTab {
+                            case "Top Stories":
+                                "https://hacker-news.firebaseio.com/v0/topstories.json"
+                            case "New Stories":
+                                "https://hacker-news.firebaseio.com/v0/newstories.json"
+                            case "Best Stories":
+                                "https://hacker-news.firebaseio.com/v0/beststories.json"
+                            case "Ask HN":
+                                "https://hacker-news.firebaseio.com/v0/askstories.json"
+                            case "Show HN":
+                                "https://hacker-news.firebaseio.com/v0/showstories.json"
+                            case "Jobs":
+                                "https://hacker-news.firebaseio.com/v0/jobstories.json"
+                            default:
+                                fatalError("\(selectedTab) doesn't exist.")
+                            }
+                            
+                            Task {
+                                await refreshData()
+                            }
+                        }
+                    } else if value.translation.width > 50 {
+                        withAnimation {
+                            if let index = tagName.firstIndex(of: selectedTab) {
+                                let idx = index == 0 ? tagName.count - 1 : index - 1
+                                selectedTab = tagName[idx]
+                                scrollToIndex = idx
+                            } else {
+                                isError = true
+                                fatalError("[ERROR] selectedTab doesn't work")
+                            }
+                            
+                            selectedTabURL = switch selectedTab {
+                            case "Top Stories":
+                                "https://hacker-news.firebaseio.com/v0/topstories.json"
+                            case "New Stories":
+                                "https://hacker-news.firebaseio.com/v0/newstories.json"
+                            case "Best Stories":
+                                "https://hacker-news.firebaseio.com/v0/beststories.json"
+                            case "Ask HN":
+                                "https://hacker-news.firebaseio.com/v0/askstories.json"
+                            case "Show HN":
+                                "https://hacker-news.firebaseio.com/v0/showstories.json"
+                            case "Jobs":
+                                "https://hacker-news.firebaseio.com/v0/jobstories.json"
+                            default:
+                                fatalError("\(selectedTab) doesn't exist.")
+                            }
+                            
+                            Task {
+                                await refreshData()
+                            }
+                        }
+                    }
+                }
+            , including: .gesture
+        )
     }
 }
 

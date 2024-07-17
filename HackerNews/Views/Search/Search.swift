@@ -1,143 +1,146 @@
 //
-//  UserSearch.swift
+//  Search.swift
 //  HackerNews
 //
-//  Created by Aaron Ma on 7/5/24.
+//  Created by Aaron Ma on 7/16/24.
 //
 
 import SwiftUI
 
 struct Search: View {
-    @State private var user = ""
+    @State private var searchText = ""
+    @State private var results: [SearchResults.Hit] = []
+    
     @State private var recentSearches: [String] = []
     
-//    struct HackerNewsSearchResult: Codable {
-//        let exhaustive: Exhaustive
-//        let hits: [Hit]
-//    }
-//
-//    struct Exhaustive: Codable {
-//        let nbHits: Bool
-//        let typo: Bool
-//        let exhaustiveNbHits: Bool
-//        let exhaustiveTypo: Bool
-//    }
-//
-//    struct Hit: Codable {
-//        let _highlightResult: HighlightResult
-//        let _tags: [String]
-//        let author: String
-//        let children: [Int]
-//        let created_at: String
-//        let created_at_i: Int
-//        let num_comments: Int
-//        let objectID: String
-//        let points: Int
-//        let story_id: Int
-//        let title: String
-//        let updated_at: String
-//        let url: String
-//    }
-//
-//    struct HighlightResult: Codable {
-//        let author: Highlight
-//        let title: Highlight
-//        let url: Highlight
-//    }
-//
-//    struct Highlight: Codable {
-//        let matchLevel: String
-//        let matchedWords: [String]
-//        let value: String
-//    }
-
+    @Namespace() var namespace
     
-//    let searchTerm = "hacker news"
-//    let urlString = "https://hn.algolia.com/api/v1/search?query=\(searchTerm)&tags=story&hitsPerPage=10&page=0"
-//
-//    if let url = URL(string: urlString) {
-//        let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
-//            if let error = error {
-//                print("Error: \(error)")
-//            } else if let data = data {
-//                let decoder = JSONDecoder()
-//                if let hits = try? decoder.decode(HackerNewsSearchResult.self, from: data) {
-//                    for hit in hits {
-//                        if let title = hit["title"] as? String, let url = hit["url"] as? String {
-//                            print("Title: \(title)\nURL: \(url)\n")
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        task.resume()
-//    }
+    func fetchResults() {
+        guard let url = URL(string: "https://hn.algolia.com/api/v1/search?query=\(searchText)") else {
+            return
+        }
+        
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                print("Error fetching results: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let data = data else {
+                print("No data returned from API")
+                return
+            }
+            
+            do {
+                let response = try JSONDecoder().decode(SearchResults.self, from: data)
+                self.results = response.hits
+            } catch let error as DecodingError {
+                print("Error parsing response: \(error)")
+                switch error {
+                case .typeMismatch(let type, let context):
+                    print("Type mismatch: \(type) - \(context.debugDescription)")
+                case .valueNotFound(let type, let context):
+                    print("Value not found: \(type) - \(context.debugDescription)")
+                case .keyNotFound(let key, let context):
+                    print("Key not found: \(key) - \(context.debugDescription)")
+                case .dataCorrupted(let context):
+                    print("Data corrupted: \(context.debugDescription)")
+                @unknown default:
+                    print("Unknown error: \(error)")
+                }
+            } catch {
+                print("Error parsing response: \(error.localizedDescription)")
+            }
+        }.resume()
+    }
     
     var body: some View {
         NavigationStack {
-            List {
-                if !user.isEmpty {
-                    Section("Search Suggestions") {
-                        NavigationLink {
-                            UserView(id: user)
-                        } label: {
-                            Image(systemName: "person.circle.fill")
-                                .foregroundStyle(Color.random())
-                            
-                            Text(user)
-                        }
-                        .onTapGesture {
-                            recentSearches.append(user)
-                        }
+            VStack {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    
+                    TextField("Search", text: $searchText)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    
+                    Button {
+                        searchText = ""
+                    } label: {
+                        Image(systemName: searchText.isEmpty ? "xmark.circle" : "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                            .opacity(searchText.isEmpty ? 0.4 : 1)
                     }
+                    .disabled(searchText.isEmpty)
                 }
+                .padding(.vertical, 8)
+                .padding(.horizontal)
                 
-                if user.isEmpty {
-                    Section("Recent Searches") {
-                        if recentSearches.isEmpty {
-                            HStack {
-                                Spacer()
-                                
-                                VStack {
-                                    Spacer()
-                                    
-                                    Image(systemName: "clock.arrow.circlepath")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(height: 80)
-                                        .padding(.bottom, 10)
-                                    
-                                    Text("No Searches Yet")
-                                        .font(.title)
-                                        .bold()
-                                        .padding(.bottom, 10)
-                                    
-                                    Text("Search any user and it'll appear here.")
-                                        .font(.subheadline)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal, 50)
-                                        .padding(.bottom, 30)
-                                    
-                                    Spacer()
+                List {
+                    if searchText.isEmpty && !recentSearches.isEmpty {
+                        Section("Recent Searches") {
+                            ForEach(recentSearches, id: \.self) { i in
+                                Button {
+                                    searchText = i
+                                } label: {
+                                    Text(i)
                                 }
-                                
-                                Spacer()
                             }
                         }
-                        
-                        ForEach(recentSearches, id: \.self) { i in
+                    }
+                    
+                    if !searchText.isEmpty {
+                        Section("Users") {
                             NavigationLink {
-                                UserView(id: i)
+                                if #available(iOS 18.0, *) {
+                                    UserView(id: searchText)
+                                        .navigationTransition(.zoom(sourceID: searchText, in: namespace))
+                                } else {
+                                    UserView(id: searchText)
+                                }
                             } label: {
-                                Label(i, systemImage: "person")
+                                Image(systemName: "person.circle.fill")
+                                    .foregroundStyle(Color.random())
+                                
+                                Text(searchText)
+                            }
+                            .onTapGesture {
+                                recentSearches.append(searchText)
+                            }
+                        }
+                    }
+                    
+                    Section("Submissions") {
+                        ForEach(results) { i in
+                            NavigationLink {
+                                if #available(iOS 18.0, *) {
+                                    StoryIDDetailView(id: Int(i.objectID)!)
+                                        .navigationTransition(.zoom(sourceID: i.objectID, in: namespace))
+                                } else {
+                                    StoryIDDetailView(id: Int(i.objectID)!)
+                                }
+                            } label: {
+                                VStack(alignment: .leading) {
+                                    Text(i.title)
+                                        .font(.headline)
+                                    
+                                    Text("Score: \(i.points)")
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }
                 }
+                .listStyle(InsetGroupedListStyle())
+                .navigationTitle("Search")
             }
-            .searchable(text: $user, prompt: "Search for anything...")
-            .navigationTitle("Search")
-            .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                fetchResults()
+            }
+            .onChange(of: searchText) {
+                fetchResults()
+            }
         }
     }
 }

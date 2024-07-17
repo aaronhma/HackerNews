@@ -13,6 +13,8 @@
 		8B0B7E332C1E1DA2004527D5 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8B0B7E322C1E1DA2004527D5 /* Preview Assets.xcassets */; };
 		8B0B7E5D2C1E8CC2004527D5 /* Storage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0B7E5C2C1E8CC2004527D5 /* Storage.swift */; };
 		8B837CE32C3B9737009A0270 /* .swiftint.yml in Resources */ = {isa = PBXBuildFile; fileRef = 8B837CE22C3B9737009A0270 /* .swiftint.yml */; };
+		8BCD212B2C3F92CE0031DE59 /* Tips.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BCD212A2C3F92CE0031DE59 /* Tips.swift */; };
+		8BCD21402C4080A10031DE59 /* SwiftOpenAI in Frameworks */ = {isa = PBXBuildFile; productRef = 8BCD213F2C4080A10031DE59 /* SwiftOpenAI */; };
 		8BE361972C38B7D5003ABBA1 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 8BE361962C38B7D5003ABBA1 /* SwiftSoup */; };
 /* End PBXBuildFile section */
 
@@ -24,6 +26,7 @@
 		8B0B7E322C1E1DA2004527D5 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		8B0B7E5C2C1E8CC2004527D5 /* Storage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Storage.swift; sourceTree = "<group>"; };
 		8B837CE22C3B9737009A0270 /* .swiftint.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = .swiftint.yml; sourceTree = "<group>"; };
+		8BCD212A2C3F92CE0031DE59 /* Tips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tips.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -42,6 +45,7 @@
 			membershipExceptions = (
 				"Bundle+icon.swift",
 				"Color+random.swift",
+				SearchResults.swift,
 				"String+parseHTML.swift",
 				TimeInterval.swift,
 				"UIApplication+currentUIWindow.swift",
@@ -54,15 +58,23 @@
 		8B0B7E4E2C1E2FE9004527D5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Account/LoginView.swift,
+				BarkAI/AskOnPage.swift,
 				News/CommentView.swift,
 				News/StoryDetailView.swift,
 				News/StoryListView.swift,
+				News/SubmitPostView.swift,
 				News/TopStoriesView.swift,
 				Onboarding.swift,
 				Search/Search.swift,
 				Search/UserView.swift,
+				Settings/AboutView.swift,
+				Settings/BarkAI.swift,
+				Settings/BrowsingView.swift,
 				Settings/HistoryView.swift,
+				Settings/NetworkView.swift,
 				Settings/SettingsView.swift,
+				Settings/TextSizeView.swift,
 			);
 			target = 8B0B7E252C1E1DA1004527D5 /* HackerNews */;
 		};
@@ -87,6 +99,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8BCD21402C4080A10031DE59 /* SwiftOpenAI in Frameworks */,
 				8BE361972C38B7D5003ABBA1 /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -119,6 +132,7 @@
 				8B0B7E292C1E1DA1004527D5 /* HackerNewsApp.swift */,
 				8B0B7E2B2C1E1DA1004527D5 /* ContentView.swift */,
 				8B0B7E5C2C1E8CC2004527D5 /* Storage.swift */,
+				8BCD212A2C3F92CE0031DE59 /* Tips.swift */,
 				8B0B7E4B2C1E2FE2004527D5 /* Views */,
 				8B0B7E392C1E1F6C004527D5 /* Model */,
 				8B0B7E2F2C1E1DA2004527D5 /* Assets.xcassets */,
@@ -153,6 +167,7 @@
 			name = HackerNews;
 			packageProductDependencies = (
 				8BE361962C38B7D5003ABBA1 /* SwiftSoup */,
+				8BCD213F2C4080A10031DE59 /* SwiftOpenAI */,
 			);
 			productName = HackerNews;
 			productReference = 8B0B7E262C1E1DA1004527D5 /* HackerNews.app */;
@@ -184,6 +199,7 @@
 			mainGroup = 8B0B7E1D2C1E1DA1004527D5;
 			packageReferences = (
 				8BE361952C38B7D5003ABBA1 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
+				8BCD213E2C4080A10031DE59 /* XCRemoteSwiftPackageReference "SwiftOpenAI" */,
 			);
 			productRefGroup = 8B0B7E272C1E1DA1004527D5 /* Products */;
 			projectDirPath = "";
@@ -215,6 +231,7 @@
 				8B0B7E2C2C1E1DA1004527D5 /* ContentView.swift in Sources */,
 				8B0B7E2A2C1E1DA1004527D5 /* HackerNewsApp.swift in Sources */,
 				8B0B7E5D2C1E8CC2004527D5 /* Storage.swift in Sources */,
+				8BCD212B2C3F92CE0031DE59 /* Tips.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -438,6 +455,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		8BCD213E2C4080A10031DE59 /* XCRemoteSwiftPackageReference "SwiftOpenAI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftBeta/SwiftOpenAI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.9.0;
+			};
+		};
 		8BE361952C38B7D5003ABBA1 /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/scinfu/SwiftSoup.git";
@@ -449,6 +474,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8BCD213F2C4080A10031DE59 /* SwiftOpenAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8BCD213E2C4080A10031DE59 /* XCRemoteSwiftPackageReference "SwiftOpenAI" */;
+			productName = SwiftOpenAI;
+		};
 		8BE361962C38B7D5003ABBA1 /* SwiftSoup */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8BE361952C38B7D5003ABBA1 /* XCRemoteSwiftPackageReference "SwiftSoup" */;

@@ -6,16 +6,17 @@
 //
 
 import SwiftUI
+import TipKit
 
 struct ContentView: View {
     @State private var selectedTab = Tab.TopStories
     
-    @AppStorage("__ShowCopyright") private var __ShowCopyright = AppSettings.__ShowCopyright
     @AppStorage("showOnboarding") private var showOnboarding = AppSettings.showOnboarding
     
     enum Tab {
         case TopStories
         case Search
+        case Profile
         case Settings
     }
     
@@ -33,18 +34,30 @@ struct ContentView: View {
                     Label("Search", systemImage: "magnifyingglass")
                 }
             
+            LoginView()
+                .tag(Tab.Profile)
+                .tabItem {
+                    Label("Profile", systemImage: "person")
+                }
+            
             SettingsView()
                 .tag(Tab.Settings)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }
         }
-        .fullScreenCover(isPresented: $__ShowCopyright) {
-            Onboarding(drm: $__ShowCopyright, showOnboarding: $showOnboarding)
+        .fullScreenCover(isPresented: $showOnboarding) {
+            Onboarding(showOnboarding: $showOnboarding)
         }
         .onAppear {
-            __ShowCopyright = true
             print("show onboarding? \(showOnboarding)")
+        }
+        .task {
+//            try? Tips.resetDatastore()
+            try? Tips.configure([
+                .displayFrequency(.immediate),
+                .datastoreLocation(.applicationDefault),
+            ])
         }
     }
 }

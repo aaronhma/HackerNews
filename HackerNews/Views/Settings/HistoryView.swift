@@ -15,6 +15,7 @@ struct HistoryView: View {
     
     @Query var history: [StoryStorage]
     
+    @State private var showClearHistoryDialog = false
     @State private var allDeleted = false
     
     func delete(_ indexSet: IndexSet) {
@@ -80,20 +81,30 @@ struct HistoryView: View {
             List {
                 if !allDeleted && !history.isEmpty {
                     Section {
-                        Button(role: .destructive) {
-                            do {
-                                try modelContext.delete(model: StoryStorage.self)
-                                
-                                withAnimation {
-                                    allDeleted.toggle()
-                                }
-                            } catch {
-                                print(error.localizedDescription)
-                            }
+                        Button {
+                            showClearHistoryDialog.toggle()
                         } label: {
                             Label("Clear History", systemImage: "trash")
                                 .foregroundStyle(.red)
                         }
+                        .confirmationDialog("Recommended stories are based on your reading history. This action can't be undone.", isPresented: $showClearHistoryDialog, titleVisibility: .visible) {
+                            Button("Clear History", role: .destructive) {
+                                URLCache.shared.removeAllCachedResponses()
+                                
+                                do {
+                                    try modelContext.delete(model: StoryStorage.self)
+                                    
+                                    withAnimation {
+                                        allDeleted.toggle()
+                                    }
+                                } catch {
+                                    print(error.localizedDescription)
+                                }
+                            }
+                        }
+                        .tint(.red)
+                    } footer: {
+                        Text("This action is irreversible!")
                     }
                     
                     ForEach(Array(zip(stories.indices, stories)), id: \.0) { i, story in
@@ -106,7 +117,17 @@ struct HistoryView: View {
                                     StoryDetailView(story: story)
                                 }
                             } label: {
-                                StoryListView(story: story, num: i + 1, showOpenedStory: false)
+                                StoryListView(story: story, showOpenedStory: false)
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    if let url = story.url {
+                                        showShareSheet(url: URL(string: url)!)
+                                    }
+                                } label: {
+                                    Label("Share", systemImage: "square.and.arrow.up")
+                                }
+                                .tint(Color.blue)
                             }
                             //                        .swipeActions(edge: .trailing) {
                             //                            Button("Delete", systemImage: "trash", role: .destructive) {
@@ -116,13 +137,23 @@ struct HistoryView: View {
                             .contextMenu {
                                 Section {
                                     NavigationLink {
-                                        StoryDetailView(story: story)
+                                        if #available(iOS 18.0, *) {
+                                            StoryDetailView(story: story)
+                                                .navigationTransition(.zoom(sourceID: story, in: namespace))
+                                        } else {
+                                            StoryDetailView(story: story)
+                                        }
                                     } label: {
                                         Label("Read Story", systemImage: "newspaper")
                                     }
                                     
                                     NavigationLink {
-                                        UserView(id: story.by)
+                                        if #available(iOS 18.0, *) {
+                                            UserView(id: story.by)
+                                                .navigationTransition(.zoom(sourceID: story, in: namespace))
+                                        } else {
+                                            UserView(id: story.by)
+                                        }
                                     } label: {
                                         Label("View Profile", systemImage: "person")
                                     }
@@ -137,6 +168,16 @@ struct HistoryView: View {
                                 Section {
                                     Button {} label: {
                                         Label("Save Story", systemImage: "bookmark")
+                                    }
+                                }
+                                
+                                Section {
+                                    Button {
+                                        if let url = story.url {
+                                            showShareSheet(url: URL(string: url)!)
+                                        }
+                                    } label: {
+                                        Label("Share", systemImage: "square.and.arrow.up")
                                     }
                                     
                                     Button {
@@ -157,6 +198,7 @@ struct HistoryView: View {
                                 }
                             }
                         }
+                        .listSectionSpacing(.custom(8))
                     }
                     .onDelete(perform: delete)
                 }

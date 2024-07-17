@@ -27,35 +27,108 @@ struct SettingsBoxView: View {
 
 struct SettingsView: View {
     @State private var iCloudSync = false
-    @State private var fontSize = 12
     @State private var suggestedForYou = true
     @State private var sharedWithYou = false
     
-    @State private var openedNetwork = true
-    @State private var openedNetworkOptions = false
-    @State private var openedDataUsage = false
-    @State private var clearCache = false
+    @State private var showSignOutDialog = false
     
-    var appVersion: String {
-        (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "1.0"
-    }
+    @Namespace() var namespace
     
-    @AppStorage("__ShowCopyright") private var __ShowCopyright = AppSettings.__ShowCopyright
-    @AppStorage("showOnboarding") private var showOnboarding = AppSettings.showOnboarding
-    @AppStorage("browserPreferenceInApp") private var browserPreferenceInApp = AppSettings.browserPreferenceInApp
-    
-    var intProxy: Binding<Double>{
-            Binding<Double>(get: {
-                return Double(fontSize)
-            }, set: {
-                print($0.description)
-                fontSize = Int($0)
-            })
-        }
+    @AppStorage("accountUserName") private var accountUserName = AppSettings.accountUserName
+    @AppStorage("accountAuth") private var accountAuth = AppSettings.accountAuth
     
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    NavigationLink {
+                        if !accountUserName.isEmpty && !accountAuth.isEmpty {
+                            if #available(iOS 18.0, *) {
+                                UserView(id: accountUserName)
+                                    .navigationTransition(.zoom(sourceID: -1, in: namespace))
+                            } else {
+                                UserView(id: accountUserName)
+                            }
+                        } else {
+                            if #available(iOS 18.0, *) {
+                                LoginView()
+                                    .navigationTransition(.zoom(sourceID: -1, in: namespace))
+                            } else {
+                                LoginView()
+                            }
+                        }
+                    } label: {
+                        if !accountUserName.isEmpty && !accountAuth.isEmpty {
+                            HStack {
+                                Image(systemName: "person.circle")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 35, height: 35)
+                                    .foregroundStyle(.orange)
+                                
+                                VStack(alignment: .leading) {
+                                    Text(accountUserName)
+                                        .lineLimit(1)
+                                        .bold()
+                                    
+                                    Text("Manage your account")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.leading, 3)
+                                
+                                Spacer()
+                            }
+                        } else {
+                            HStack {
+                                Image(systemName: "y.square.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 35, height: 35)
+                                    .foregroundStyle(.orange)
+                                
+                                VStack(alignment: .leading) {
+                                    Text("Hacker News Account")
+                                        .bold()
+                                    
+                                    Text("Sign in to access your profile, submit posts, upvote, and more.")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.leading, 3)
+                                
+                                Spacer()
+                            }
+                        }
+                    }
+                    
+                    if !accountUserName.isEmpty && !accountAuth.isEmpty {
+                        Button(role: .destructive) {
+                            showSignOutDialog = true
+                        } label: {
+                            Text("Sign out")
+                        }
+                        .confirmationDialog("Are you sure you'd like to sign out? You won't be able to upvote or reply to comments.", isPresented: $showSignOutDialog, titleVisibility: .visible) {
+                            Button("Sign out", role: .destructive) {
+                                URLCache.shared.removeAllCachedResponses()
+                                accountUserName = ""
+                                accountAuth = ""
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Account")
+                } footer: {
+                    if !accountUserName.isEmpty && !accountAuth.isEmpty {
+                        Text("Authentication token: \(accountAuth)")
+                    } else {
+                        Text("One account for everything YC.")
+                    }
+                }
+                .onAppear {
+                    print("Authentication token: \(accountAuth)")
+                }
+                
                 Section {
                     Toggle(isOn: $iCloudSync) {
                         Label {
@@ -64,6 +137,7 @@ struct SettingsView: View {
                             SettingsBoxView(icon: "icloud", color: .black.opacity(0.5))
                         }
                     }
+                    .disabled(true)
                 } header: {
                     Text("Cloud Sync")
                 } footer: {
@@ -72,20 +146,12 @@ struct SettingsView: View {
                 
                 Section {
                     NavigationLink {
-                        List {
-                            Section("Text Size") {
-                                VStack {
-                                    Slider(value: intProxy, in: 4...100, step: 1.0)
-                                    Text("Font size: \(fontSize)")
-                                }
-                            }
-                            
-                            Section("Font") {
-                                Text("San Francisco (iOS System)")
-                            }
+                        if #available(iOS 18.0, *) {
+                            TextSizeView()
+                                .navigationTransition(.zoom(sourceID: 0, in: namespace))
+                        } else {
+                            TextSizeView()
                         }
-                        .navigationTitle("Text Size & Font")
-                        .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         Label {
                             Text("Text Size & Font")
@@ -95,66 +161,27 @@ struct SettingsView: View {
                     }
                     
                     NavigationLink {
-                        List {
-                            Section {
-                                Button {
-                                    browserPreferenceInApp = true
-                                } label: {
-                                    HStack {
-                                        Label("Built-in Internal Bark Browser", systemImage: "wand.and.sparkles")
-                                        
-                                        if browserPreferenceInApp {
-                                            Spacer()
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                
-                                Button {
-                                    browserPreferenceInApp = false
-                                } label: {
-                                    HStack {
-                                        Label("Use External Browser", systemImage: "safari")
-                                        
-                                        if !browserPreferenceInApp {
-                                            Spacer()
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                            } header: {
-                                Text("Link Behavior")
-                            } footer: {
-                                if browserPreferenceInApp {
-                                    Text("You're getting the best reading experience possible! :)")
-                                } else {
-                                    Text("Bark's AI features like Pinch to Summarize and ad blocking aren't available on external browsers.")
-                                }
-                            }
-                            
-                            if browserPreferenceInApp {
-                                Section("Privacy") {
-                                    Toggle("Block Known Ad Networks", isOn: .constant(true))
-                                    Toggle("Block Known Trackers", isOn: .constant(true))
-                                }
-                                
-                                Section("Appearance") {
-                                    Toggle("Force Dark Mode", isOn: .constant(true))
-                                }
-                            }
-                            
-                            Section {
-                                Toggle("Show AI Summary Options", isOn: .constant(true))
-                            } header: {
-                                Text("AI Summary")
-                            } footer: {
-                                Text("You need your own ChatGPT API key.")
-                            }
+                        if #available(iOS 18.0, *) {
+                            BarkAIView()
+                                .navigationTransition(.zoom(sourceID: 1, in: namespace))
+                        } else {
+                            BarkAIView()
                         }
-                        .navigationTitle("Browsing")
-                        .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        Label {
+                            Text("Bark AI")
+                        } icon: {
+                            SettingsBoxView(icon: "brain", color: .brown)
+                        }
+                    }
+                    
+                    NavigationLink {
+                        if #available(iOS 18.0, *) {
+                            BrowsingView()
+                                .navigationTransition(.zoom(sourceID: 2, in: namespace))
+                        } else {
+                            BrowsingView()
+                        }
                     } label: {
                         Label {
                             Text("Browsing")
@@ -189,6 +216,12 @@ struct SettingsView: View {
                     
                     NavigationLink {
                         List {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .controlSize(.extraLarge)
+                                Spacer()
+                            }
                         }
                         .navigationTitle("Accessibility")
                         .navigationBarTitleDisplayMode(.inline)
@@ -222,7 +255,12 @@ struct SettingsView: View {
                     }
                     
                     NavigationLink {
-                        HistoryView()
+                        if #available(iOS 18.0, *) {
+                            HistoryView()
+                                .navigationTransition(.zoom(sourceID: 0, in: namespace))
+                        } else {
+                            HistoryView()
+                        }
                     } label: {
                         Label {
                             Text("History")
@@ -231,7 +269,16 @@ struct SettingsView: View {
                         }
                     }
                     
-                    NavigationLink {} label: {
+                    NavigationLink {
+                        List {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .controlSize(.extraLarge)
+                                Spacer()
+                            }
+                        }
+                    } label: {
                         Label {
                             Text("Saved Stories")
                         } icon: {
@@ -239,7 +286,16 @@ struct SettingsView: View {
                         }
                     }
                     
-                    NavigationLink {} label: {
+                    NavigationLink {
+                        List {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .controlSize(.extraLarge)
+                                Spacer()
+                            }
+                        }
+                    } label: {
                         Label {
                             Text("Upvoted Stories")
                         } icon: {
@@ -247,7 +303,16 @@ struct SettingsView: View {
                         }
                     }
                     
-                    NavigationLink {} label: {
+                    NavigationLink {
+                        List {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .controlSize(.extraLarge)
+                                Spacer()
+                            }
+                        }
+                    } label: {
                         Label {
                             Text("Blocked Topics")
                         } icon: {
@@ -255,7 +320,16 @@ struct SettingsView: View {
                         }
                     }
                     
-                    NavigationLink {} label: {
+                    NavigationLink {
+                        List {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .controlSize(.extraLarge)
+                                Spacer()
+                            }
+                        }
+                    } label: {
                         Label {
                             Text("Blocked Users")
                         } icon: {
@@ -270,156 +344,11 @@ struct SettingsView: View {
                 
                 Section {
                     NavigationLink {
-                        NavigationStack {
-                            ScrollView {
-                                VStack {
-                                    GroupBox {
-                                        if openedNetwork {
-                                            Divider()
-                                            
-                                            VStack(alignment: .leading) {
-                                                Toggle("Show Website Image Previews", isOn: .constant(true))
-                                                    .bold()
-                                                Text("Images will not display on section fronts to reduce data usage.")
-                                                    .padding(.top, 5)
-                                                    .foregroundStyle(.secondary)
-                                                Divider()
-                                                Toggle("Automatic Refresh", isOn: .constant(true))
-                                                    .bold()
-                                                Text("Content will not update automatically to reduce data usage.")
-                                                    .padding(.top, 5)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            .padding(.top)
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Label("Network", systemImage: "network")
-                                            
-                                            Spacer()
-                                            
-                                            Button {
-                                                withAnimation {
-                                                    openedNetwork.toggle()
-                                                }
-                                            } label: {
-                                                Image(systemName: openedNetwork ? "chevron.down" : "chevron.right")
-                                                    .tint(.secondary)
-                                            }
-                                            .symbolEffect(.bounce, value: openedNetwork)
-                                        }
-                                    }
-                                    .sensoryFeedback(.impact, trigger: openedNetwork)
-                                    
-                                    GroupBox {
-                                        if openedNetworkOptions {
-                                            Divider()
-                                            
-                                            VStack(alignment: .leading) {
-                                                Toggle("Allow Cellular Access", isOn: .constant(true))
-                                                    .bold()
-                                                Text("Content will not update automatically on **Cellular**.")
-                                                    .padding(.top, 5)
-                                                    .foregroundStyle(.secondary)
-                                                Divider()
-                                                Toggle("Allow Low Data Mode Access", isOn: .constant(true))
-                                                    .bold()
-                                                Text("Content will not update automatically on **Low Data Mode**.")
-                                                    .padding(.top, 5)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            .padding(.top)
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Label("Network Options", systemImage: "list.star")
-                                            
-                                            Spacer()
-                                            
-                                            Button {
-                                                withAnimation {
-                                                    openedNetworkOptions.toggle()
-                                                }
-                                            } label: {
-                                                Image(systemName: openedNetworkOptions ? "chevron.down" : "chevron.right")
-                                                    .tint(.secondary)
-                                            }
-                                            .symbolEffect(.bounce, value: openedNetworkOptions)
-                                        }
-                                    }
-                                    .sensoryFeedback(.impact, trigger: openedNetworkOptions)
-                                    
-                                    GroupBox {
-                                        if openedDataUsage {
-                                            Divider()
-                                            VStack {
-                                                ProgressView(value: 100, total: 100)
-                                                    .progressViewStyle(.linear)
-                                                    .padding(.vertical)
-                                                    .overlay {
-                                                        Text("1GB/1GB allocated")
-                                                            .bold()
-                                                            .font(.system(size: 8))
-                                                    }
-                                            }
-                                            
-                                            Divider()
-                                            
-                                            VStack(alignment: .leading) {
-                                                Toggle("Automatically Download Stories", isOn: .constant(true))
-                                                    .bold()
-                                                Text("Stories will automatically download for offline reading.")
-                                                    .padding(.top, 5)
-                                                    .foregroundStyle(.secondary)
-                                                Divider()
-                                                Button {
-                                                    clearCache = true
-                                                } label: {
-                                                    HStack {
-                                                        Spacer()
-                                                        Label("Clear Cache", systemImage: "trash")
-                                                            .foregroundStyle(.white)
-                                                            .bold()
-                                                        Spacer()
-                                                    }
-                                                    .padding(.vertical, 8)
-                                                    .background(.red)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                                                }
-                                                .confirmationDialog("All downloaded stories will be removed on the next app launch.", isPresented: $clearCache, titleVisibility: .visible) {
-                                                    Button("Clear Cache", role: .destructive) {
-                                                        URLCache.shared.removeAllCachedResponses()
-                                                    }
-                                                }
-                                                .padding(.top)
-                                                Text("All downloaded stories & content will be removed.")
-                                                    .padding(.top, 5)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            .padding(.top)
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Label("Data Usage", systemImage: "internaldrive")
-                                            
-                                            Spacer()
-                                            
-                                            Button {
-                                                withAnimation {
-                                                    openedDataUsage.toggle()
-                                                }
-                                            } label: {
-                                                Image(systemName: openedDataUsage ? "chevron.down" : "chevron.right")
-                                                    .tint(.secondary)
-                                            }
-                                            .symbolEffect(.bounce, value: openedDataUsage)
-                                        }
-                                    }
-                                    .sensoryFeedback(.impact, trigger: openedDataUsage)
-                                }
-                                .padding(.horizontal)
-                            }
-                            .navigationTitle("Network & Data Usage")
+                        if #available(iOS 18.0, *) {
+                            NetworkView()
+                                .navigationTransition(.zoom(sourceID: 420, in: namespace))
+                        } else {
+                            NetworkView()
                         }
                     } label: {
                         Label {
@@ -436,121 +365,11 @@ struct SettingsView: View {
                 
                 Section {
                     NavigationLink {
-                        Image(uiImage: Bundle.main.icon ?? UIImage())
-                            .resizable()
-                            .frame(width: 80, height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .shadow(color: .accentColor, radius: 5)
-                        
-                        Text("bark for Hacker News")
-                            .bold()
-                            .font(.largeTitle)
-                        
-                        Text("v\(appVersion)")
-                            .foregroundStyle(.secondary)
-                        
-                        Text("Made with 💖 & 😀\nby **Aaron Ma**.")
-                            .multilineTextAlignment(.center)
-                        
-                        Button {} label: {
-                            HStack {
-                                Spacer()
-                                Label("Twitter", systemImage: "bird.fill")
-                                    .bold()
-                                    .foregroundStyle(.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                Spacer()
-                            }
-                            .padding(.vertical, 8)
-                            .background(.blue.opacity(0.6))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(.blue, lineWidth: 2)
-                            }
-                        }
-                        .padding(.horizontal)
-                        
-                        Text("With 🥰 from Cupertino, CA.")
-                        
-                        Button {
-                            __ShowCopyright = true
-                            showOnboarding = true
-                        } label: {
-                            Text("Show Onboarding")
-                        }
-                        
-                        NavigationLink {
-                            List {
-                                Section("API") {
-                                    NavigationLink {
-                                        ScrollView {
-                                            Text("""
-    The MIT License (MIT)
-    
-    Copyright (c) 2024 Y Combinator Hacker News
-    
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-    
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-    
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
-    """)
-                                            .navigationTitle("Hacker News")
-                                        }
-                                    } label: {
-                                        Text("Hacker News")
-                                    }
-                                }
-                                
-                                Section("HTML Parser") {
-                                    NavigationLink {
-                                        ScrollView {
-                                            Text("""
-    MIT License
-    
-    Copyright (c) 2016 Nabil Chatbi
-    
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-    
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-    
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
-    """)
-                                            .navigationTitle("SwiftSoup")
-                                        }
-                                    } label: {
-                                        Text("SwiftSoup")
-                                    }
-                                }
-                            }
-                            .navigationTitle("Acknowledgements")
-                        } label: {
-                            Text("Acknowledgements")
+                        if #available(iOS 18.0, *) {
+                            AboutView()
+                                .navigationTransition(.zoom(sourceID: 69, in: namespace))
+                        } else {
+                            AboutView()
                         }
                     } label: {
                         Label {
@@ -560,7 +379,7 @@ struct SettingsView: View {
                         }
                     }
                 } header: {
-                    Text("Hacker News v\(appVersion)")
+                    Text("bark for Hacker News")
                 } footer: {
                     Text("Get the latest experimental features, manage app updates and generate system reports for debugging purposes.")
                 }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Comment: Codable {
+struct Comment: Codable, Hashable, Identifiable {
     var by: String
     var id: Int
     var kids: [Int]?

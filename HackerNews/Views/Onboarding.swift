@@ -58,7 +58,6 @@ struct OnboardingPage1: View {
     
     @AppStorage("showOnboarding") private var showOnboarding = AppSettings.showOnboarding
     
-    @Binding var drm: Bool
     @Binding var termsAgreed: Bool
     
     var body: some View {
@@ -85,6 +84,8 @@ struct OnboardingPage1: View {
                         .opacity(animate ? 1 : 0)
                         .foregroundStyle(.white)
                         .animation(.easeInOut(duration: 1.5), value: animate)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
                     
                     Text("By continuing, you agree to not disclose knowledge of this app's existence.")
                         .multilineTextAlignment(.center)
@@ -94,16 +95,13 @@ struct OnboardingPage1: View {
                         .offset(y: animate ? 0 : 20)
                         .opacity(animate ? 1 : 0)
                         .animation(.easeInOut(duration: 1.5), value: animate)
+                        .padding(.horizontal)
                     
                     Spacer()
                     
                     Button {
                         withAnimation(.easeInOut(duration: 1.0)) {
-                            if !showOnboarding {
-                                drm.toggle()
-                            } else {
-                                termsAgreed.toggle()
-                            }
+                            termsAgreed.toggle()
                         }
                     } label: {
                         Text("Agree & Continue")
@@ -116,7 +114,6 @@ struct OnboardingPage1: View {
                     .clipShape(RoundedRectangle(cornerRadius: 22))
                     .padding(.horizontal)
                     .sensoryFeedback(.success, trigger: termsAgreed)
-                    .sensoryFeedback(.success, trigger: drm)
                 }
                 .opacity(animate ? 1 : 0)
                 .animation(.easeInOut(duration: 1.5), value: animate)
@@ -134,12 +131,11 @@ struct OnboardingPage1: View {
 }
 
 struct OnboardingPage2: View {
-    var titles = ["Read on an iOS-native app", "Suggested For You", "AI-powered experiences", "Block ads and trackers", "Customize anything", "Free & open-source", "HEADER_CHANGED_V2"]
-    var descriptions = ["Custom themes & dark mode support", "Read articles tailored to your interests", "Summarize articles with a pinch", "See the internet as it should be", "Personalize your news", "Welcome to the community!", "FOOTER_CHANGED_V2"]
-    var icons = ["newspaper.fill", "brain.fill", "cpu.fill", "hand.raised.fill", "slider.vertical.3", "hand.wave.fill", "hand.thumbsup"]
-    var colors = [Color.orange, .indigo, .teal, .pink, .purple, .green, .black]
+    var titles = ["Read on a native iOS app", "Suggested For You", "AI-powered experiences", "Block ads and trackers", "Customize anything", "Every platform supported", "Free & open-source"]
+    var descriptions = ["Custom themes & dark mode support", "Read articles tailored to your interests", "Summarize articles with a pinch", "See the internet as it should be", "Personalize your news", "Read on all your devices", "Welcome to the community!"]
+    var icons = ["newspaper.fill", "brain.fill", "hand.pinch.fill", "hand.raised.fill", "slider.vertical.3", "desktopcomputer", "hand.wave.fill"]
+    var colors = [Color.orange, .indigo, .teal, .pink, .purple, .black, .green]
     
-    @Binding var drm: Bool
     @Binding var showOnboarding: Bool
     
     var body: some View {
@@ -165,7 +161,6 @@ struct OnboardingPage2: View {
                 
                 Button {
                     withAnimation(.easeInOut(duration: 3.0)) {
-                        drm.toggle()
                         showOnboarding.toggle()
                     }
                 } label: {
@@ -187,18 +182,17 @@ struct OnboardingPage2: View {
 struct Onboarding: View {
     @State private var termsAgreed = false
     
-    @Binding var drm: Bool
     @Binding var showOnboarding: Bool
     
     var body: some View {
         if termsAgreed {
-            OnboardingPage2(drm: $drm, showOnboarding: $showOnboarding)
+            OnboardingPage2(showOnboarding: $showOnboarding)
         } else {
-            OnboardingPage1(drm: $drm, termsAgreed: $termsAgreed)
+            OnboardingPage1(termsAgreed: $termsAgreed)
         }
     }
 }
 
 #Preview {
-    Onboarding(drm: .constant(true), showOnboarding: .constant(true))
+    Onboarding(showOnboarding: .constant(true))
 }

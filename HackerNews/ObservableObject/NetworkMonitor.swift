@@ -10,7 +10,7 @@ import Network
 
 class NetworkMonitor: ObservableObject {
     private let monitor = NWPathMonitor()
-    private let queue = DispatchQueue(label: "Hacker News - Network Monitor")
+    private let queue = DispatchQueue(label: "bark for Hacker News")
     
     var isActive = false
     

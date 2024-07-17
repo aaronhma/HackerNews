@@ -8,8 +8,15 @@
 import Foundation
 
 enum AppSettings {
-    static let __ShowCopyright = true
     static let showOnboarding = true
     
+    static let accountUserName = ""
+    static let accountAuth = ""
+    
+    static let fontName = ""
+    static let fontSize = 17
+    
     static let browserPreferenceInApp = true
+    
+    static let apiKey = ""
 }

@@ -12,12 +12,17 @@ struct CommentView: View {
     var layer: Int
     var storyAuthor: String
     
+    @Namespace() var namespace
+    
     @State private var comment: Comment = Comment(by: "", id: 0, parent: 0, text: "", time: 0, type: "")
     @State private var isError = false
     @State private var isLoaded = false
     
     @State private var collapsedComment = false
     @State private var showOPExplainerAlert = false
+    
+    @AppStorage("fontName") private var fontName = AppSettings.fontName
+    @AppStorage("fontSize") private var fontSize = AppSettings.fontSize
     
     func refreshData() async {
         comment = Comment(by: "", id: 0, parent: 0, text: "", time: 0, type: "")
@@ -52,7 +57,12 @@ struct CommentView: View {
                         VStack {
                             HStack {
                                 NavigationLink {
-                                    UserView(id: comment.by)
+                                    if #available(iOS 18.0, *) {
+                                        UserView(id: comment.by)
+                                            .navigationTransition(.zoom(sourceID: comment, in: namespace))
+                                    } else {
+                                        UserView(id: comment.by)
+                                    }
                                 } label: {
                                     Label(comment.by, systemImage: "person")
                                         .lineLimit(1)
@@ -91,6 +101,7 @@ struct CommentView: View {
                             if !collapsedComment {
                                 HStack {
                                     Text(comment.text.parseHTML())
+                                        .font(fontName.isEmpty ? .system(size: CGFloat(fontSize)) : .custom(fontName, size: CGFloat(fontSize)))
                                         .padding(.vertical, 2)
                                         .fixedSize(horizontal: false, vertical: true)
                                     
