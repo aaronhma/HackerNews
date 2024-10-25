@@ -1,5 +1,5 @@
 //
-//  String+parseHTML.swift
+//  String.swift
 //  HackerNews
 //
 //  Created by Aaron Ma on 7/5/24.
@@ -9,8 +9,21 @@ import SwiftSoup
 import Foundation
 
 extension String {
+    func isValidURL() -> Bool {
+        guard self.count >= 10 else { return false } // http://a.a
+        
+        if let url = URLComponents(string: self) {
+            if url.scheme != nil && !url.scheme!.isEmpty {
+                let scheme = (url.scheme ?? "fail")
+                return scheme == "http" || scheme == "https"
+            }
+        }
+        
+        return false
+    }
+    
     func parseHTML() -> String {
-        let BREAKPOINT = "}BR{"
+        let BREAKPOINT = "}30BR082{"
         
         do {
             var modifiedString = ""

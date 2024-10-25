@@ -26,6 +26,7 @@
 		8B0B7E322C1E1DA2004527D5 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		8B0B7E5C2C1E8CC2004527D5 /* Storage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Storage.swift; sourceTree = "<group>"; };
 		8B837CE22C3B9737009A0270 /* .swiftint.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = .swiftint.yml; sourceTree = "<group>"; };
+		8B8EB2BC2C4899CA002AB3DD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8BCD212A2C3F92CE0031DE59 /* Tips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tips.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -35,6 +36,7 @@
 			membershipExceptions = (
 				AppSettings.swift,
 				Comment.swift,
+				SearchResults.swift,
 				Story.swift,
 				User.swift,
 			);
@@ -45,8 +47,7 @@
 			membershipExceptions = (
 				"Bundle+icon.swift",
 				"Color+random.swift",
-				SearchResults.swift,
-				"String+parseHTML.swift",
+				String.swift,
 				TimeInterval.swift,
 				"UIApplication+currentUIWindow.swift",
 				URL.swift,
@@ -127,6 +128,7 @@
 		8B0B7E282C1E1DA1004527D5 /* HackerNews */ = {
 			isa = PBXGroup;
 			children = (
+				8B8EB2BC2C4899CA002AB3DD /* Info.plist */,
 				8B0B7E572C1E8C05004527D5 /* ObservableObject */,
 				8B0B7E452C1E24BD004527D5 /* Extensions */,
 				8B0B7E292C1E1DA1004527D5 /* HackerNewsApp.swift */,
@@ -366,10 +368,12 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"HackerNews/Preview Content\"";
-				DEVELOPMENT_TEAM = L3P446LNNP;
+				DEVELOPMENT_TEAM = NMJRG9GQTL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HackerNews/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = bark;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.news";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -386,11 +390,11 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -403,10 +407,12 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"HackerNews/Preview Content\"";
-				DEVELOPMENT_TEAM = L3P446LNNP;
+				DEVELOPMENT_TEAM = NMJRG9GQTL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HackerNews/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = bark;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.news";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -423,11 +429,11 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};

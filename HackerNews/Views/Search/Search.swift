@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct Search: View {
+	@Environment(\.dismiss) var dismiss
+	
     @State private var searchText = ""
     @State private var results: [SearchResults.Hit] = []
     
@@ -59,7 +61,7 @@ struct Search: View {
             VStack {
                 HStack {
                     Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     
                     TextField("Search", text: $searchText)
                         .textInputAutocapitalization(.never)
@@ -69,7 +71,7 @@ struct Search: View {
                         searchText = ""
                     } label: {
                         Image(systemName: searchText.isEmpty ? "xmark.circle" : "xmark.circle.fill")
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .opacity(searchText.isEmpty ? 0.4 : 1)
                     }
                     .disabled(searchText.isEmpty)
@@ -141,6 +143,13 @@ struct Search: View {
             .onChange(of: searchText) {
                 fetchResults()
             }
+			.toolbar {
+				ToolbarItem(placement: .topBarTrailing) {
+					Button("Done") {
+						dismiss()
+					}
+				}
+			}
         }
     }
 }

@@ -14,6 +14,8 @@ struct SubmitPostView: View {
     @State private var url = ""
     @State private var text = ""
     
+    @State private var invalidURL = false
+    
     @AppStorage("accountUserName") private var accountUserName = AppSettings.accountUserName
     @AppStorage("accountAuth") private var accountAuth = AppSettings.accountAuth
     
@@ -51,24 +53,37 @@ struct SubmitPostView: View {
                 }
                 
                 Section {
-                    TextField("Title", text: .constant(""))
+                    TextField("Title", text: $title)
                 }
                 
                 Section {
-                    TextField("URL", text: .constant(""))
+                    TextField("URL", text: $url)
+                } footer: {
+                    if invalidURL {
+                        Text("This URL doesn't seem to be valid. Double-check it.")
+                            .foregroundStyle(.red)
+                    }
+                }
+                .onChange(of: url) {
+                    invalidURL = !url.isValidURL()
                 }
                 
                 Section {
-                    TextField("Text", text: .constant(""))
+                    TextField("Text", text: $text)
                 }
                 
                 Section {
                     Button {
-                        title = title.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
-                        url = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
-                        text = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
-                        
-                        // let urlString = "https://news.ycombinator.com/submitlink?u=%22\(url)%22&t=%22\(title)%22&s=%22\(text)%22"
+                        if url.isValidURL() {
+                            title = title.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
+                            url = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
+                            text = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
+                            
+                            let urlString = "https://news.ycombinator.com/submitlink?u=%22\(url)%22&t=%22\(title)%22&s=%22\(text)%22"
+                            print(urlString)
+                        } else {
+                            invalidURL = true
+                        }
                     } label: {
                         Label("Submit", systemImage: "plus")
                     }
