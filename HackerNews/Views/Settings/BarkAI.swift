@@ -78,6 +78,7 @@ struct BarkAIView: View {
 								Toggle(isOn: .constant(true)) {
 									Label("Pinch to Summarize", systemImage: "hand.pinch")
 								}
+								.disabled(true)
 							} header: {
 								Text("Pinch To Summarize")
 							} footer: {
@@ -88,6 +89,7 @@ struct BarkAIView: View {
 								Toggle(isOn: .constant(true)) {
 									Label("Ask on Page", systemImage: "wand.and.sparkles")
 								}
+								.disabled(true)
 							} header: {
 								Text("Ask on Page")
 							} footer: {

@@ -16,7 +16,7 @@ struct PinchToSummarizeDiscussionTip: Tip {
     }
     
     var message: Text? {
-        Text("Too long of a discussion? Pinch to summarize the main points. [not working - wait until next release]")
+        Text("Too long of a discussion? Pinch to summarize the main points.")
     }
     
     var image: Image? {
@@ -46,7 +46,7 @@ struct PinchToSummarizeArticleTip: Tip {
     }
     
     var message: Text? {
-        Text("Too long of an article? Pinch to summarize the main points. [not working - wait until next release]")
+        Text("Too long of an article? Pinch to summarize the main points.")
     }
     
     var image: Image? {
@@ -66,4 +66,22 @@ struct PinchToSummarizeArticleTip: Tip {
     var actions: [Action] {
         [Action(id: "summarize-discussion", title: "Summarize Discussion")]
     }
+}
+
+struct AskOnPageTip: Tip {
+	var title: Text {
+		Text("Ask on Page")
+	}
+	
+	var message: Text? {
+		Text("Tap here to get your questions answered!")
+	}
+	
+	var image: Image? {
+		Image(systemName: "questionmark.text.page")
+	}
+	
+	var actions: [Action] {
+		[Action(id: "ask-on-page", title: "Ask on Page")]
+	}
 }

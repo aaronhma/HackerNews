@@ -28,10 +28,6 @@ struct SettingsBoxView: View {
 }
 
 struct SettingsView: View {
-	@State private var iCloudSync = false
-	@State private var suggestedForYou = true
-	@State private var sharedWithYou = false
-	
 	@State private var showSignOutDialog = false
 	
 	@Namespace() var namespace
@@ -129,21 +125,6 @@ struct SettingsView: View {
 				}
 				.onAppear {
 					print("Authentication token: \(accountAuth)")
-				}
-				
-				Section {
-					Toggle(isOn: $iCloudSync) {
-						Label {
-							Text("Enable iCloud Sync")
-						} icon: {
-							SettingsBoxView(icon: "icloud", color: .black.opacity(0.5))
-						}
-					}
-					.disabled(true)
-				} header: {
-					Text("Cloud Sync")
-				} footer: {
-					Text("iCloud Sync isn't available on this device.")
 				}
 				
 				Section {
@@ -250,26 +231,9 @@ struct SettingsView: View {
 					}
 				} header: {
 					Text("Display & Appearance")
-				} footer: {
-					Text("Personalize your experience in ways that work best for you with vision accessibility, custom gestures, and the browsing experience.")
 				}
 				
 				Section {
-					Toggle(isOn: $suggestedForYou) {
-						Label {
-							Text("Show Suggested Stories")
-						} icon: {
-							SettingsBoxView(icon: "medal.star", color: .orange)
-						}
-					}
-					Toggle(isOn: $sharedWithYou) {
-						Label {
-							Text("Shared with You")
-						} icon: {
-							SettingsBoxView(icon: "sharedwithyou", color: .purple)
-						}
-					}
-					
 					NavigationLink {
 						if #available(iOS 18.0, *) {
 							HistoryView()
@@ -296,7 +260,7 @@ struct SettingsView: View {
 						}
 					} label: {
 						Label {
-							Text("Saved Stories")
+							Text("Saved & Upvoted Stories")
 						} icon: {
 							SettingsBoxView(icon: "bookmark", color: .indigo)
 						}
@@ -330,32 +294,13 @@ struct SettingsView: View {
 						}
 					} label: {
 						Label {
-							Text("Blocked Topics")
-						} icon: {
-							SettingsBoxView(icon: "minus.circle", color: .red)
-						}
-					}
-					
-					NavigationLink {
-						List {
-							HStack {
-								Spacer()
-								ProgressView()
-									.controlSize(.extraLarge)
-								Spacer()
-							}
-						}
-					} label: {
-						Label {
-							Text("Blocked Users")
+							Text("Blocked Topics, Websites & Users")
 						} icon: {
 							SettingsBoxView(icon: "hand.raised", color: .red)
 						}
 					}
 				} header: {
 					Text("Personalization")
-				} footer: {
-					Text("Customize your personalized news feed and jump back into stories that interest you.")
 				}
 				
 				Section {
@@ -375,8 +320,6 @@ struct SettingsView: View {
 					}
 				} header: {
 					Text("Network & Data Usage")
-				} footer: {
-					Text("Find out how much data you're using, set data restrictions, and manage network settings.")
 				}
 				
 				Section {
@@ -396,8 +339,6 @@ struct SettingsView: View {
 					}
 				} header: {
 					Text("bark for Hacker News")
-				} footer: {
-					Text("Get the latest experimental features, manage app updates and generate system reports for debugging purposes.")
 				}
 			}
 			.navigationTitle("Settings")

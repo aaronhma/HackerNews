@@ -25,6 +25,8 @@ struct CommentView: View {
 	@AppStorage("fontName") private var fontName = AppSettings.fontName
 	@AppStorage("fontSize") private var fontSize = AppSettings.fontSize
 	
+//	@Binding var allCommentsString: String
+	
 	func refreshData() async {
 		comment = Comment(by: "", id: 0, parent: 0, text: "", time: 0, type: "")
 		isError = false

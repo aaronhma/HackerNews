@@ -33,16 +33,18 @@ struct TopStoriesView: View {
 	@State private var currentStoryNum = 0
 	@State private var numberOfStories = 5
 	@State private var showOfflineMessage = true
+	@State private var showingEditTagsSheet = false
 	
 	@State private var scrollToIndex: Int? = nil
 	
 	@State private var showSignInRequiredSheet = false
 	@State private var showingSearchSheet = false
+	@State private var showingTopButtons = true
 	
 	@Namespace() var namespace
 	
-	private var tagName = ["Top Stories", "New Stories", "Best Stories", "Ask HN", "Show HN", "Jobs"]
-	private var tagIcon = ["arrowshape.up", "newspaper", "trophy", "questionmark.app", "eye", "briefcase"]
+	@State private var tagName = ["Top Stories", "New Stories", "Best Stories", "Ask HN", "Show HN", "Jobs"]
+	@State private var tagIcon = ["arrowshape.up", "newspaper", "trophy", "questionmark.app", "eye", "briefcase"]
 	
 	func refreshData() async {
 		topStories = []
@@ -80,7 +82,6 @@ struct TopStoriesView: View {
 			
 			do {
 				let storyURL = URL(string: "https://hacker-news.firebaseio.com/v0/item/\(topStories[i]).json")!
-				//                print(storyURL.absoluteString, currentStoriesIndex, currentBatchLoadedStories)
 				var story = try await URLSession.shared.decode(Story.self, from: storyURL)
 				
 				if story.url == nil {
@@ -104,74 +105,209 @@ struct TopStoriesView: View {
 		tempStoryCache = []
 	}
 	
+	private func deleteTag(offsets: IndexSet) {
+		tagName.remove(atOffsets: offsets)
+		tagIcon.remove(atOffsets: offsets)
+	}
+	
+	private func moveTag(source: IndexSet, destination: Int) {
+		tagName.move(fromOffsets: source, toOffset: destination)
+		tagIcon.move(fromOffsets: source, toOffset: destination)
+	}
+	
 	var body: some View {
 		NavigationStack {
 			List {
-				ScrollViewReader { proxy in
-					ScrollView(.horizontal, showsIndicators: false) {
-						LazyHStack {
-							ForEach(Array(zip(tagName.indices, tagName)), id: \.0) { i, name in
-								Button {
-									withAnimation {
-										selectedTab = name
-										
-										selectedTabURL = switch selectedTab {
-										case "Top Stories":
-											"https://hacker-news.firebaseio.com/v0/topstories.json"
-										case "New Stories":
-											"https://hacker-news.firebaseio.com/v0/newstories.json"
-										case "Best Stories":
-											"https://hacker-news.firebaseio.com/v0/beststories.json"
-										case "Ask HN":
-											"https://hacker-news.firebaseio.com/v0/askstories.json"
-										case "Show HN":
-											"https://hacker-news.firebaseio.com/v0/showstories.json"
-										case "Jobs":
-											"https://hacker-news.firebaseio.com/v0/jobstories.json"
-										default:
-											fatalError("\(selectedTab) doesn't exist.")
-										}
-										
-										Task {
-											await refreshData()
-										}
-										
-										proxy.scrollTo(i, anchor: .center)
-									}
-								} label: {
-									Label(name, systemImage: selectedTab == name ? "\(tagIcon[i]).fill" : tagIcon[i])
-										.padding(.vertical, 8)
-										.padding(.horizontal, 8)
-										.background(selectedTab == name ? .blue : .secondary.opacity(0.15))
-										.foregroundStyle(colorScheme == .dark ? .white : (selectedTab == name ? .white : .black))
-										.clipShape(RoundedRectangle(cornerRadius: 10))
-										.symbolEffect(.bounce, value: selectedTab == name)
-										.bold(selectedTab == name)
+				Section {} header: {
+					VStack {
+						HStack {
+							Button {
+								showingSearchSheet.toggle()
+							} label: {
+								HStack {
+									Spacer()
+									
+									Image(systemName: "magnifyingglass")
+										.bold()
+									
+									Text("Tap here to search")
+										.font(.headline)
+										.bold()
+										.lineLimit(1)
+									
+									Spacer()
 								}
-								.sensoryFeedback(.success, trigger: selectedTab)
-								.padding(.leading, i == 0 ? 10 : 0)
-								.padding(.trailing, i == tagName.count - 1 ? 10 : 0)
+								.padding(12)
+								.background(colorScheme == .dark ? .regularMaterial : .bar)
+								.clipShape(RoundedRectangle(cornerRadius: 32))
+							}
+							.modifier(BackgroundShadowModifier())
+							.foregroundColor(.primary)
+							.frame(maxWidth: .infinity)
+							
+							NavigationLink {
+								SettingsView()
+							} label: {
+								Image(systemName: "gearshape")
+									.bold()
+									.padding(12)
+									.foregroundStyle(.primary)
+									.background(colorScheme == .dark ? .regularMaterial : .bar)
+									.clipShape(RoundedRectangle(cornerRadius: 32))
+							}
+							.modifier(BackgroundShadowModifier())
+						}
+						.padding(.horizontal)
+						
+						Text(currentTime, format: .dateTime.month(.wide).day().year())
+							.foregroundStyle(.primary)
+							.font(.largeTitle)
+							.bold()
+						
+						ScrollViewReader { proxy in
+							ScrollView(.horizontal, showsIndicators: false) {
+								LazyHStack {
+									ForEach(Array(zip(tagName.indices, tagName)), id: \.0) { i, name in
+										Button {
+											withAnimation {
+												selectedTab = name
+												
+												selectedTabURL = switch selectedTab {
+												case "Top Stories":
+													"https://hacker-news.firebaseio.com/v0/topstories.json"
+												case "New Stories":
+													"https://hacker-news.firebaseio.com/v0/newstories.json"
+												case "Best Stories":
+													"https://hacker-news.firebaseio.com/v0/beststories.json"
+												case "Ask HN":
+													"https://hacker-news.firebaseio.com/v0/askstories.json"
+												case "Show HN":
+													"https://hacker-news.firebaseio.com/v0/showstories.json"
+												case "Jobs":
+													"https://hacker-news.firebaseio.com/v0/jobstories.json"
+												default:
+													fatalError("\(selectedTab) doesn't exist.")
+												}
+												
+												Task {
+													await refreshData()
+												}
+												
+												proxy.scrollTo(i, anchor: .center)
+											}
+										} label: {
+											Label(name, systemImage: selectedTab == name ? "\(tagIcon[i]).fill" : tagIcon[i])
+												.padding(.vertical, 8)
+												.padding(.horizontal, 8)
+//												.background(selectedTab == name ? .blue : .secondary.opacity(0.15))
+												.background(selectedTab == name ? .blue : .clear)
+												.background(selectedTab == name ? .regularMaterial : .bar)
+												.foregroundStyle(colorScheme == .dark ? .white : (selectedTab == name ? .white : .black))
+												.clipShape(RoundedRectangle(cornerRadius: 32))
+												.symbolEffect(.bounce, value: selectedTab == name)
+												.bold(selectedTab == name)
+										}
+										.modifier(BackgroundShadowModifier())
+										.sensoryFeedback(.success, trigger: selectedTab)
+										.padding(.leading, i == 0 ? 10 : 0)
+										//								.padding(.trailing, i == tagName.count - 1 ? 10 : 0)
+									}
+									
+									Button {
+										showingEditTagsSheet.toggle()
+									} label: {
+										Label("Edit", systemImage: "pencil")
+											.padding(.vertical, 8)
+											.padding(.horizontal, 8)
+											.background(Color.accentColor.opacity(0.15))
+											.foregroundStyle(colorScheme == .dark ? .white : .black)
+											.clipShape(RoundedRectangle(cornerRadius: 10))
+											.symbolEffect(.bounce, value: showingEditTagsSheet)
+									}
+									.sensoryFeedback(.success, trigger: showingEditTagsSheet)
+									.padding(.trailing, 10)
+									.sheet(isPresented: $showingEditTagsSheet) {
+										NavigationStack {
+											List {
+												Section {
+													ForEach(Array(zip(tagName.indices, tagName)), id: \.0) { i, name in
+														Label(tagName[i], systemImage: tagIcon[i])
+															.swipeActions(edge: .trailing) {
+																Button(role: .destructive) {
+																} label: {
+																	Label("Delete", systemImage: "trash")
+																}
+															}
+													}
+													.onDelete(perform: deleteTag)
+													.onMove(perform: moveTag)
+												}
+												.listRowBackground(Color.clear)
+												.listRowSeparator(.hidden)
+												
+												Section {
+													Button(role: .destructive) {
+														tagName = ["Top Stories", "New Stories", "Best Stories", "Ask HN", "Show HN", "Jobs"]
+														tagIcon = ["arrowshape.up", "newspaper", "trophy", "questionmark.app", "eye", "briefcase"]
+													} label: {
+														Text("Reset Tags")
+													}
+													.disabled(tagName == ["Top Stories", "New Stories", "Best Stories", "Ask HN", "Show HN", "Jobs"])
+												}
+												//											.listRowBackground(Color.clear)
+												//											.listRowSeparator(.hidden)
+											}
+											.navigationTitle("Edit Tags")
+											.toolbar {
+												ToolbarItem(placement: .topBarLeading) {
+													EditButton()
+												}
+												
+												ToolbarItem(placement: .topBarTrailing) {
+													Button {
+														showingEditTagsSheet.toggle()
+													} label: {
+														Image(systemName: "xmark.circle.fill")
+															.foregroundStyle(.secondary)
+															.bold()
+													}
+													.buttonStyle(.plain)
+												}
+											}
+										}
+										.interactiveDismissDisabled()
+										.presentationBackground(.regularMaterial)
+										.presentationCornerRadius(32)
+									}
+								}
+							}
+							.onChange(of: scrollToIndex) {
+								withAnimation {
+									if let newIndex = scrollToIndex {
+										proxy.scrollTo(newIndex, anchor: .center)
+									}
+								}
 							}
 						}
+						.frame(height: 50)
+						//					.listRowInsets(EdgeInsets())
+						//					.listRowSpacing(0)
+						//					.listRowSeparator(.hidden)
 					}
-					.onChange(of: scrollToIndex) {
-						withAnimation {
-							if let newIndex = scrollToIndex {
-								proxy.scrollTo(newIndex, anchor: .center)
-							}
-						}
+					
+				}
+				.textCase(nil)
+				.listRowInsets(EdgeInsets())
+				.onAppear {
+					withAnimation(.smooth(duration: 0.3, extraBounce: 0)) {
+						showingTopButtons = false
 					}
 				}
-				.frame(height: 50)
-				.listRowInsets(EdgeInsets())
-				.listRowSpacing(0)
-				.listRowSeparator(.hidden)
-				
-				Text(currentTime, format: .dateTime.month(.wide).day().year())
-					.listRowSeparator(.hidden)
-					.foregroundStyle(.secondary)
-					.font(.largeTitle)
-					.bold()
+				.onDisappear {
+					withAnimation(.smooth(duration: 0.3, extraBounce: 0)) {
+						showingTopButtons = true
+					}
+				}
 				
 				if autoRefreshAlert {
 					HStack {
@@ -350,7 +486,7 @@ struct TopStoriesView: View {
 					}
 				}
 			}
-			.listStyle(.plain)
+			.contentMargins(0)
 			.refreshable {
 				self.currentTime = Date()
 				
@@ -359,11 +495,13 @@ struct TopStoriesView: View {
 				}
 			}
 			.toolbar {
-				ToolbarItem(placement: .topBarLeading) {
-					Button {
-						showingSearchSheet.toggle()
-					} label: {
-						Label("Search", systemImage: "magnifyingglass")
+				if showingTopButtons {
+					ToolbarItem(placement: .topBarLeading) {
+						Button {
+							showingSearchSheet.toggle()
+						} label: {
+							Label("Search", systemImage: "magnifyingglass")
+						}
 					}
 				}
 				
@@ -376,26 +514,6 @@ struct TopStoriesView: View {
 					}
 				}
 				
-#if targetEnvironment(simulator)
-				ToolbarItem(placement: .topBarTrailing) {
-					Menu {
-						Section("View Options") {
-							Button {
-								Task {
-									isLoaded = false
-									isError = false
-									await refreshData()
-								}
-							} label: {
-								Label("Force Refresh", systemImage: "arrow.circlepath")
-							}
-						}
-					} label: {
-						Label("View Options", systemImage: "arrow.up.arrow.down")
-					}
-				}
-#endif
-				
 				ToolbarItem(placement: .topBarTrailing) {
 					NavigationLink {
 						LoginView()
@@ -404,11 +522,13 @@ struct TopStoriesView: View {
 					}
 				}
 				
-				ToolbarItem(placement: .topBarTrailing) {
-					NavigationLink {
-						SettingsView()
-					} label: {
-						Label("Settings", systemImage: "gearshape")
+				if showingTopButtons {
+					ToolbarItem(placement: .topBarTrailing) {
+						NavigationLink {
+							SettingsView()
+						} label: {
+							Label("Settings", systemImage: "gearshape")
+						}
 					}
 				}
 			}

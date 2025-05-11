@@ -104,7 +104,7 @@ struct HistoryView: View {
                         }
                         .tint(.red)
                     } footer: {
-                        Text("This action is irreversible!")
+                        Text("Your History is only from this device and isn't synced for your privacy.")
                     }
                     
                     ForEach(Array(zip(stories.indices, stories)), id: \.0) { i, story in

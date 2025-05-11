@@ -17,6 +17,21 @@ struct NetworkView: View {
         NavigationStack {
             ScrollView {
                 VStack {
+					Section {
+						Toggle(isOn: .constant(false)) {
+							Label {
+								Text("Enable iCloud Sync")
+							} icon: {
+								SettingsBoxView(icon: "icloud", color: .black.opacity(0.5))
+							}
+						}
+						.disabled(true)
+					} header: {
+						Text("Cloud Sync")
+					} footer: {
+						Text("iCloud Sync isn't available on this device.")
+					}
+					
                     GroupBox {
                         if openedNetwork {
                             Divider()

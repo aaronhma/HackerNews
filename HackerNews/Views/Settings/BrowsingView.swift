@@ -19,11 +19,12 @@ struct BrowsingView: View {
                     } label: {
                         HStack {
                             Label("Built-in Internal Bark Browser", systemImage: "wand.and.sparkles")
+								.foregroundStyle(Color.accentColor)
                             
                             if browserPreferenceInApp {
                                 Spacer()
                                 Image(systemName: "checkmark")
-                                    .foregroundStyle(.blue)
+									.foregroundStyle(Color.accentColor)
                             }
                         }
                     }
@@ -34,11 +35,12 @@ struct BrowsingView: View {
                     } label: {
                         HStack {
                             Label("Use External Browser", systemImage: "safari")
+								.foregroundStyle(Color.accentColor)
                             
                             if !browserPreferenceInApp {
                                 Spacer()
                                 Image(systemName: "checkmark")
-                                    .foregroundStyle(.blue)
+									.foregroundStyle(Color.accentColor)
                             }
                         }
                     }
@@ -54,21 +56,21 @@ struct BrowsingView: View {
                 }
                 
                 if browserPreferenceInApp {
-                    Section("Privacy") {
-                        Toggle(isOn: .constant(true)) {
+                    Section("Privacy - Coming Soon") {
+                        Toggle(isOn: .constant(false)) {
                             Label("Block Known Ad Networks", systemImage: "x.square")
                         }
-                        Toggle(isOn: .constant(true)) {
+                        Toggle(isOn: .constant(false)) {
                             Label("Block Known Trackers", systemImage: "lock.shield")
                         }
                     }
                     
-                    Section("Appearance") {
-                        Toggle(isOn: .constant(true)) {
+                    Section("Appearance - Coming Soon") {
+                        Toggle(isOn: .constant(false)) {
                             Label("Force Dark Mode", systemImage: "circle.lefthalf.filled")
                         }
                         
-                        Toggle(isOn: .constant(true)) {
+                        Toggle(isOn: .constant(false)) {
                             Label("Use Reader Mode", systemImage: "book.pages")
                         }
                     }

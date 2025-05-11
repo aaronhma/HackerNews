@@ -12,7 +12,7 @@
 		8B0B7E302C1E1DA2004527D5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8B0B7E2F2C1E1DA2004527D5 /* Assets.xcassets */; };
 		8B0B7E332C1E1DA2004527D5 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8B0B7E322C1E1DA2004527D5 /* Preview Assets.xcassets */; };
 		8B0B7E5D2C1E8CC2004527D5 /* Storage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0B7E5C2C1E8CC2004527D5 /* Storage.swift */; };
-		8B837CE32C3B9737009A0270 /* .swiftint.yml in Resources */ = {isa = PBXBuildFile; fileRef = 8B837CE22C3B9737009A0270 /* .swiftint.yml */; };
+		8B837CE32C3B9737009A0270 /* .swiftlint.yml in Resources */ = {isa = PBXBuildFile; fileRef = 8B837CE22C3B9737009A0270 /* .swiftlint.yml */; };
 		8BCD212B2C3F92CE0031DE59 /* Tips.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BCD212A2C3F92CE0031DE59 /* Tips.swift */; };
 		8BCD21402C4080A10031DE59 /* SwiftOpenAI in Frameworks */ = {isa = PBXBuildFile; productRef = 8BCD213F2C4080A10031DE59 /* SwiftOpenAI */; };
 		8BE361972C38B7D5003ABBA1 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 8BE361962C38B7D5003ABBA1 /* SwiftSoup */; };
@@ -25,7 +25,7 @@
 		8B0B7E2F2C1E1DA2004527D5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8B0B7E322C1E1DA2004527D5 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		8B0B7E5C2C1E8CC2004527D5 /* Storage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Storage.swift; sourceTree = "<group>"; };
-		8B837CE22C3B9737009A0270 /* .swiftint.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = .swiftint.yml; sourceTree = "<group>"; };
+		8B837CE22C3B9737009A0270 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = .swiftlint.yml; sourceTree = "<group>"; };
 		8B8EB2BC2C4899CA002AB3DD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8BCD212A2C3F92CE0031DE59 /* Tips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tips.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -76,6 +76,7 @@
 				Settings/NetworkView.swift,
 				Settings/SettingsView.swift,
 				Settings/TextSizeView.swift,
+				ViewModifier/BackgroundShadowModifier.swift,
 			);
 			target = 8B0B7E252C1E1DA1004527D5 /* HackerNews */;
 		};
@@ -111,7 +112,7 @@
 		8B0B7E1D2C1E1DA1004527D5 = {
 			isa = PBXGroup;
 			children = (
-				8B837CE22C3B9737009A0270 /* .swiftint.yml */,
+				8B837CE22C3B9737009A0270 /* .swiftlint.yml */,
 				8B0B7E282C1E1DA1004527D5 /* HackerNews */,
 				8B0B7E272C1E1DA1004527D5 /* Products */,
 			);
@@ -218,7 +219,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8B0B7E332C1E1DA2004527D5 /* Preview Assets.xcassets in Resources */,
-				8B837CE32C3B9737009A0270 /* .swiftint.yml in Resources */,
+				8B837CE32C3B9737009A0270 /* .swiftlint.yml in Resources */,
 				8B0B7E302C1E1DA2004527D5 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

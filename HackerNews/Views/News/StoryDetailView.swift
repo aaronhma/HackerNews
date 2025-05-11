@@ -11,6 +11,7 @@ import WebKit
 import TipKit
 import SwiftSoup
 import SafariServices
+import SwiftOpenAI
 
 struct WebView: UIViewRepresentable {
 	let url: URL
@@ -27,12 +28,12 @@ struct WebView: UIViewRepresentable {
 	}
 	
 	func updateUIView(_ webView: WKWebView, context: Context) {
-		if storyLoading {
+//		if storyLoading {
 			webView.load(URLRequest(url: url))
 			//            webView.evaluateJavaScript("document.documentElement.scrollHeight") { (result, error) in
 			//                context.coordinator.parent.storyLoading = false
 			//            }
-		}
+//		}
 	}
 	
 	class Coordinator: NSObject, WKNavigationDelegate {
@@ -334,7 +335,7 @@ struct StoryDetailView: View {
 										AsyncImage(url: URL(string: previewImageURL)!) { i in
 											i.image?
 												.resizable()
-												.scaledToFit()
+												.scaledToFill()
 												.frame(width: .infinity, height: 200)
 										}
 										.overlay {
@@ -670,10 +671,10 @@ struct StoryDetailView: View {
 								Button {} label: {}
 							}
 							
-							if let url = story.url {
-								WebView(url: URL(string: url)!, storyLoading: $storyLoading)
+//							if let url = story.url {
+							WebView(url: URL(string: story.url!)!, storyLoading: $storyLoading)
 									.edgesIgnoringSafeArea(.all)
-							}
+//							}
 						}
 						.presentationDetents([.large, .medium], selection: .constant(.large))
 					}

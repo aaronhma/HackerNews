@@ -1,5 +1,5 @@
 {
-  "originHash" : "442d9516c3e9ce6195238360b7aa3747e5c64342f767d54bbf8a4f9c025bcacb",
+  "originHash" : "f05e18317a329d6bf6fa50e165ea926b208ed2d6edc5eefb29c494b84f3c429b",
   "pins" : [
     {
       "identity" : "swiftopenai",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scinfu/SwiftSoup.git",
       "state" : {
-        "revision" : "028487d4a8a291b2fe1b4392b5425b6172056148",
-        "version" : "2.7.2"
+        "revision" : "0837db354faf9c9deb710dc597046edaadf5360f",
+        "version" : "2.7.6"
       }
     }
   ],
