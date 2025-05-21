@@ -2,6 +2,9 @@
 
 ## About
 
+> [!WARNING]
+> I'm currently updating this repo with a new way of displaying & fetching stories so your phone won't heat up.
+
 > [!IMPORTANT]
 > "bark" is a tentative name. The software is currently in development and features may break.
 
