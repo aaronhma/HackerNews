@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import SwiftOpenAI
+//import SwiftOpenAI
 
 //struct AskOnPage: View {
 //	@AppStorage("apiKey") private var apiKey = AppSettings.apiKey

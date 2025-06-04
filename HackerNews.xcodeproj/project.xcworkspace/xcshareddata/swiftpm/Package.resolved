@@ -1,15 +1,6 @@
 {
-  "originHash" : "f05e18317a329d6bf6fa50e165ea926b208ed2d6edc5eefb29c494b84f3c429b",
+  "originHash" : "2b6d335272326468abc2114223e2ce9f2cf9645d68fa4e525733ecbf43f90359",
   "pins" : [
-    {
-      "identity" : "swiftopenai",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/SwiftBeta/SwiftOpenAI.git",
-      "state" : {
-        "revision" : "b316788cf0e6584cc730d8231112dd2c76458713",
-        "version" : "1.9.0"
-      }
-    },
     {
       "identity" : "swiftsoup",
       "kind" : "remoteSourceControl",

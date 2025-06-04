@@ -11,7 +11,7 @@ import WebKit
 import TipKit
 import SwiftSoup
 import SafariServices
-import SwiftOpenAI
+//import SwiftOpenAI
 
 struct WebView: UIViewRepresentable {
 	let url: URL
