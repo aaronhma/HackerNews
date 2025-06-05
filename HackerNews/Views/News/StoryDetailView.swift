@@ -508,7 +508,7 @@ struct StoryDetailView: View {
 							}
 							.padding(.horizontal, 10)
 							
-							//                if !monitor.isActive {
+							//                if !monitor.isConnnected {
 							//                    HStack {
 							//                        Spacer()
 							//

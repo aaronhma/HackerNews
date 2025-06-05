@@ -374,7 +374,7 @@ struct TopStoriesView: View {
 					}
 				}
 
-				if !monitor.isActive && showOfflineMessage {
+				if !monitor.isConnected && showOfflineMessage {
 					Section {
 						Button {
 							showOfflineMessage = false
@@ -437,7 +437,7 @@ struct TopStoriesView: View {
 						.listRowInsets(EdgeInsets())
 						.listRowSpacing(5)
 						.listRowSeparatorTint(.secondary)
-						.disabled(!monitor.isActive)
+						.disabled(!monitor.isConnected)
 						.contextMenu {
 							Section {
 								NavigationLink {
@@ -684,7 +684,7 @@ struct TopStoriesView: View {
 				.presentationDetents([])
 				.interactiveDismissDisabled(true)
 			}
-			.navigationTitle(monitor.isActive ? selectedTab : "Offline")
+			.navigationTitle(monitor.isConnected ? selectedTab : "Offline")
 		}
 		.onAppear {
 			Task {

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct UserView: View {
-    private let monitor = NetworkMonitor()
+    private let networkMonitor = NetworkMonitor()
     
     var id: String
     
@@ -85,7 +85,7 @@ struct UserView: View {
     
     var body: some View {
         NavigationStack {
-            if !monitor.isActive {
+			if !(networkMonitor.isConnected ?? true) {
                 VStack {
                     Spacer()
                     
@@ -203,7 +203,7 @@ struct UserView: View {
                                     .listRowInsets(EdgeInsets())
                                     .listRowSpacing(5)
                                     .listRowSeparatorTint(.secondary)
-                                    .disabled(!monitor.isActive)
+                                    .disabled(!networkMonitor.isConnected)
                                     .contextMenu {
                                         Section {
                                             NavigationLink {

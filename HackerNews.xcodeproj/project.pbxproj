@@ -69,6 +69,7 @@
 				News/StoryListView.swift,
 				News/SubmitPostView.swift,
 				News/TopStoriesView.swift,
+				NoInternetView.swift,
 				Onboarding.swift,
 				Search/Search.swift,
 				Search/UserView.swift,
