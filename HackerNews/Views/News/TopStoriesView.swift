@@ -62,6 +62,7 @@ struct TopStoriesView: View {
 
 	func refreshData() async {
 		do {
+			viewModel.clearCache()  // Clear cache on refresh
 			try await viewModel.fetchStories(from: selectedTabURL)
 		} catch {
 			viewModel.isError = true
@@ -418,7 +419,7 @@ struct TopStoriesView: View {
 				}
 
 				Section {
-					ForEach(Array(zip(viewModel.stories.indices, viewModel.stories)), id: \.0) {
+					ForEach(Array(viewModel.stories.enumerated()), id: \.element.id) {
 						i, story in
 						NavigationLink {
 							if #available(iOS 18.0, *) {
@@ -511,10 +512,31 @@ struct TopStoriesView: View {
 							}
 						}
 						.onAppear {
-							// Stories are loaded all at once with concurrent fetching
+							// Infinite scroll: load more when approaching the end
+							// Load when 10 items from the bottom to prevent frequent triggers
+							let threshold = max(0, viewModel.stories.count - 10)
+							if i >= threshold && viewModel.hasMore && !viewModel.isLoadingMore {
+								Task {
+									await viewModel.loadMore()
+								}
+							}
 						}
 					}
 					.listRowInsets(EdgeInsets())
+
+					// Loading more indicator - minimized to reduce jitter
+					if viewModel.isLoadingMore && viewModel.hasMore {
+						HStack {
+							Spacer()
+							ProgressView()
+								.controlSize(.small)
+							Spacer()
+						}
+						.frame(height: 30)
+						.listRowSeparator(.hidden)
+						.listRowBackground(Color.clear)
+						.transition(.opacity)
+					}
 
 					if viewModel.isLoaded && viewModel.stories.isEmpty {
 						VStack {
